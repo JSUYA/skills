@@ -151,8 +151,12 @@
     `*_tizen` packages and Tizen-exclusive plugins such as
     `tizen_app_control`, `messageport_tizen`, `permission_handler_tizen`).
     Use when a cross-platform plugin lacks Tizen support, when needing a
-    Tizen-only feature (app-control, messageport, package manager), or when
-    declaring privileges in `tizen-manifest.xml`.
+    Tizen-only feature (app-control, messageport, package manager), when a
+    Tizen plugin throws `PRIVILEGE_DENIED` / crashes at runtime due to a
+    missing privilege, or when declaring privileges in `tizen-manifest.xml`.
+    Covers privilege declaration + runtime permission for *any* `*_tizen`
+    plugin; for two-process service-app workflows specifically, use
+    `flutter-tizen-background-service` instead.
   examplePrompt: "Add location support to my app on Tizen, including the privilege declaration"
   instructions: |
     1. **Look up the right plugin.** Check the
@@ -318,12 +322,16 @@
     - https://docs.tizen.org/application/native/guides/app-management/common-appcontrols
 
 - name: flutter-tizen-background-service
-  description: Build a Tizen service application that runs alongside the
-    Flutter UI app, and wire two-way communication between them via
-    `messageport_tizen`. Use when work must continue after the UI is
-    paused (sync, telemetry, sensor polling), when the UI must wake a
-    background worker, or when a long-running task must survive UI
-    process termination.
+  description: Build a separate Tizen `<service-application>` TPK that
+    runs alongside the Flutter UI app, keep its Dart entry alive after
+    `main()` returns, and wire UI↔service IPC via `messageport_tizen`.
+    Use when the work needs a second app process registered as a Tizen
+    service (not just a plugin), when a service app exits immediately
+    after `main()` returns, when work must continue after the UI is
+    paused (sync, telemetry, sensor polling), or when a long-running
+    task must survive UI process termination. For privileges around
+    `messageport_tizen` inside a single UI process, use
+    `flutter-tizen-use-plugins` instead.
   examplePrompt: "Add a service app that polls a sensor and sends results to the UI when the UI is foreground"
   instructions: |
     1. **Confirm a service is required.** Work that fits in one UI

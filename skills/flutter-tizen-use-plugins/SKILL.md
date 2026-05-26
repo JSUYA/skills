@@ -1,6 +1,6 @@
 ---
 name: flutter-tizen-use-plugins
-description: Pick and wire up Tizen-side Flutter plugins (Samsung-maintained `*_tizen` packages and Tizen-exclusive plugins such as `tizen_app_control`, `messageport_tizen`, `permission_handler_tizen`). Use when a cross-platform plugin lacks Tizen support, when needing a Tizen-only feature (app-control, messageport, package manager), or when declaring privileges in `tizen-manifest.xml`.
+description: Pick and wire up Tizen-side Flutter plugins (Samsung-maintained `*_tizen` packages and Tizen-exclusive plugins such as `tizen_app_control`, `messageport_tizen`, `permission_handler_tizen`). Use when a cross-platform plugin lacks Tizen support, when needing a Tizen-only feature (app-control, messageport, package manager), when a Tizen plugin throws `PRIVILEGE_DENIED` / crashes at runtime due to a missing privilege, or when declaring privileges in `tizen-manifest.xml`. Covers privilege declaration + runtime permission for *any* `*_tizen` plugin; for two-process service-app workflows specifically, use `flutter-tizen-background-service` instead.
 metadata:
   target: flutter-tizen
   category: plugins

@@ -1,6 +1,6 @@
 ---
 name: flutter-tizen-background-service
-description: Build a Tizen service application that runs alongside the Flutter UI app, and wire two-way communication between them via `messageport_tizen`. Use when work must continue after the UI is paused (sync, telemetry, sensor polling), when the UI must wake a background worker, or when a long-running task must survive UI process termination.
+description: Build a separate Tizen `<service-application>` TPK that runs alongside the Flutter UI app, keep its Dart entry alive after `main()` returns, and wire UI↔service IPC via `messageport_tizen`. Use when the work needs a second app process registered as a Tizen service (not just a plugin), when a service app exits immediately after `main()` returns, when work must continue after the UI is paused (sync, telemetry, sensor polling), or when a long-running task must survive UI process termination. For privileges around `messageport_tizen` inside a single UI process, use `flutter-tizen-use-plugins` instead.
 metadata:
   target: flutter-tizen
   category: lifecycle
