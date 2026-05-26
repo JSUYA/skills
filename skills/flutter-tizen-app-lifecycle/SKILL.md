@@ -181,3 +181,7 @@ If you only see `paused` and never `resumed`, the OS killed the process — re-l
 - **Listening multiple times.** Adding the same observer twice receives every callback twice. Use a single field, not a `List` of observers added per build.
 - **Assuming `detached` is reliable.** It often runs, but never bet on it for critical persistence. Use `paused` as your durability boundary.
 - **App Control on cold launch.** The intent that launched the app is delivered to `AppControl.onAppControl` *before* the first `resumed`. If you subscribe only after `resumed`, you miss it. Subscribe in `initState` and buffer.
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

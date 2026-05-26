@@ -155,3 +155,7 @@ Copy this checklist when introducing a service app to a project:
 | Service does not start at boot | `on-boot="false"` or device profile forbids it | Set `on-boot="true"` on TV; on phones/IoT, prompt the user to start it |
 | UI and service get out of sync after upgrade | Independent TPKs with mismatched protocol versions | Embed a version field in every message; reject mismatches at the receiver |
 | `auto-restart="true"` drains the battery | Crash loop on startup | Persist crash count + backoff before restarting work |
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

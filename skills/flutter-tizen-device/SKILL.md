@@ -163,3 +163,7 @@ For VS Code, the bundled `flutter-tizen: Attach (project)` configuration perform
 | `dlog` output stops abruptly | TV firmware aggressively rotates the log buffer | Add `-b main -b system` flags, or save to file |
 | `attach --debug-url` fails with `Connection refused` | The app crashed before printing the VM service URL, or printed an `http://...:0/` URL (port not yet allocated) | Restart the app with `--start-paused` and re-grep |
 | Multiple emulators selected ambiguously | Prefix match collision | Pass the full ID (`emulator-26101`, not `emulator`) |
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

@@ -351,3 +351,7 @@ void main() {
 - **Plugin not registered in TPK.** Confirm the plugin's `.so` is packed by `unzip -l build/tizen/tpk/*.tpk | grep <plugin>`. If missing, `flutter-tizen clean` and rebuild.
 - **Hot reload skips native changes.** Editing `.cc` requires a full rebuild + reinstall. Only Dart-side changes hot-reload.
 - **Memory leaks from Tizen `free`-required strings.** Any Tizen API that returns `char *` typically transfers ownership; always `free()` after copying into `std::string`, as in the template.
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

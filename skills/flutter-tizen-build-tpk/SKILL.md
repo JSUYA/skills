@@ -123,6 +123,8 @@ unzip -p build/tizen/tpk/*.tpk tizen-manifest.xml | grep -oE 'appid="[^"]+"'
 
 ## Examples
 
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.
+
 ```sh
 # Emulator (Tizen common 10.x, x64, debug)
 flutter-tizen build tpk --device-profile common --target-arch x64 --debug

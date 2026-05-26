@@ -156,3 +156,7 @@ Copy this checklist when adding App Control to an app:
 | Caller hangs forever | Receiver did not reply when `shouldReply == true` | Call `request.reply(...)` in every handler that may be invoked-for-result |
 | `extraData` values lose type info | The underlying Tizen API serialises everything to `String` | Encode complex values as JSON strings; decode on read |
 | `sendTerminateRequest` throws permission denied | Missing kill privilege | Add `http://tizen.org/privilege/appmanager.kill` or `.kill.bgapp` |
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

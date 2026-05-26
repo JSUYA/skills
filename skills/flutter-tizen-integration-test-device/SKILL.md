@@ -204,3 +204,7 @@ Tip: For TV runs, replace the emulator step with `sdb connect <tv-ip>` and pin t
 - **Timeouts too short.** `pumpAndSettle()` defaults to 10 minutes globally but per-frame waits can race on slow TV firmware; widen tolerances rather than chasing flakiness.
 - **Stale installs.** A previous version of the app left on the device gets re-used if the package version didn't bump. `sdb -s <id> uninstall <appid>` between runs in CI.
 - **Multi-device ambiguity.** With both an emulator and a TV reachable, omitting `-d` makes the test target whatever sdb listed first. Always pin `-d`.
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

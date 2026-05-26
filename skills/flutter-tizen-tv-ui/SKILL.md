@@ -156,3 +156,7 @@ Copy this checklist when adapting a screen from mobile to TV:
 | Screen reader silent on custom card | No explicit `Semantics` | Wrap with `Semantics(label:, button: true)` |
 | Layout reflows when font scale changes | Fixed-height widgets | Use intrinsic sizes or `Flexible`; let TV scale grow vertically |
 | Toast disappears before remote reaches it | Default snackbar duration | Bump to ≥ 6 s on TV; consider non-dismissing banner |
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

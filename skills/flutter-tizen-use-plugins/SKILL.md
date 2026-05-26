@@ -177,3 +177,7 @@ The plugin's shared library should appear under `lib/`. If not, `flutter-tizen c
 - **Trusting `permission_handler` alone.** Without a manifest privilege the runtime API instantly returns `denied`. Always check both layers.
 - **API-version mismatch.** A plugin built against `api-version="6.0"` won't link on a 5.5 device. Bump the project's manifest `api-version` (and `device-profile`) to match what the plugin requires.
 - **Stale build cache.** When swapping endorsed ↔ unendorsed, `flutter-tizen clean` is mandatory — pub cache and plugin registry are otherwise stale.
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

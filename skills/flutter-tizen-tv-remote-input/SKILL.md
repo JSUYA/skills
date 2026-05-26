@@ -190,3 +190,7 @@ Watch for the matching `LogicalKeyboardKey.*` value in `flutter-tizen logs` / `s
 - **Swallowing system keys.** Returning `KeyEventResult.handled` for `audioVolume*` or `power` keys prevents the TV from running its own handler and gets your app flagged in store review.
 - **Focus lost on `setState`.** Recreating a `FocusableActionDetector` without a stable `Key` resets focus to nowhere. Use a `FocusNode` field or a `ValueKey` on rebuilds.
 - **Dialogs steal focus oddly.** `showDialog` creates its own scope but does not autofocus inside it. Pass `useRootNavigator: false` and add `autofocus: true` to the first dialog button.
+
+## Example
+
+Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

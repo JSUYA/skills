@@ -1,0 +1,24 @@
+# Excerpt from pubspec.yaml. Run `flutter-tizen pub get` (not vanilla
+# `flutter pub get`) so the Tizen platform interface is registered.
+name: my_app
+description: Tizen-aware Flutter sample.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Cross-platform packages — the *_tizen implementations are pulled
+  # in transitively (endorsed) where possible.
+  geolocator: ^13.0.1
+
+  # Unendorsed Tizen implementation — add explicitly.
+  geolocator_tizen: ^4.4.0
+
+  # Tizen-exclusive: runtime privacy permissions.
+  permission_handler_tizen: ^0.2.1
