@@ -1,0 +1,325 @@
+# Copyright (c) 2026, the Flutter-Tizen authors. Please see the AUTHORS file
+# for details. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
+
+# Configuration file for the skill generator (vendored from flutter/skills).
+# Regenerate the SKILL.md files (from the `tool` directory):
+#
+#   dart run skills generate-skill \
+#       --config ../resources/flutter_tizen_skills.yaml \
+#       --output ../skills
+#
+# Requires GEMINI_API_KEY for live generation. Hand-review every output —
+# Tizen-specific CLI flags, plugin names, and privilege URLs hallucinate easily.
+
+- name: flutter-tizen-setup
+  description: Install and verify the flutter-tizen toolchain (Tizen SDK, sdb,
+    certificate profile, flutter-tizen CLI). Use when bootstrapping a new
+    development host, when `flutter-tizen doctor` reports missing components,
+    or before a clean-room device build.
+  examplePrompt: "Set up flutter-tizen on a fresh Ubuntu 24.04 host and confirm doctor is green"
+  instructions: |
+    1. **Verify host prerequisites.** 64-bit Linux (Ubuntu 22.04 / 24.04
+       verified), macOS x64, or Windows x64. `git`, `unzip`, `bash`, Python 3
+       on `PATH`. For the Tizen emulator, HW virtualization must be on.
+    2. **Install the Tizen SDK** via the VS Code Extension for Tizen (Tizen
+       Studio 6.1 standalone is also fine if already installed). Use the
+       Tizen Package Manager to install `[Advanced] 6.0 IOT-Headed + Mobile`
+       and, if emulators are needed, `[Advanced] 9.0` plus the relevant
+       emulator image.
+    3. **Put `sdb` and `tizen` on `PATH`** and verify with `sdb version` and
+       `tizen version`.
+    4. **Clone flutter-tizen** from github.com/flutter-tizen/flutter-tizen,
+       put `bin/` on `PATH` ahead of any upstream `flutter`, and run
+       `flutter-tizen --version` to bootstrap the pinned Flutter SDK.
+    5. **Create a Samsung certificate profile** via Certificate Manager (or
+       `tizen security-profiles add`). Tizen refuses to install unsigned
+       packages even on the emulator.
+    6. **Run `flutter-tizen doctor -v`** and resolve every red item before
+       continuing. `Currently on an unknown channel` can be ignored.
+    7. **Smoke-build.** `flutter-tizen create demo && cd demo &&
+       flutter-tizen build tpk --debug --device-profile common` must succeed
+       end-to-end.
+  resources:
+    - https://github.com/flutter-tizen/flutter-tizen
+    - https://github.com/flutter-tizen/flutter-tizen/wiki/Tizen-SDK
+    - https://docs.tizen.org/application/vstools/install-vstools
+
+- name: flutter-tizen-build-tpk
+  description: Build, sign, and inspect Tizen TPK packages for Flutter apps
+    with `flutter-tizen build tpk`. Use when producing a deployable artifact
+    for a specific device profile (common, mobile, tv), when troubleshooting
+    signing failures, or when controlling ABI / build mode for emulator vs.
+    real device.
+  examplePrompt: "Build a signed release TPK for Samsung TV 2022"
+  instructions: |
+    1. **Confirm `tizen-manifest.xml` matches the target.** `<manifest
+       profile="..."` and `api-version` must match the device profile (e.g.
+       `tv` + `6.5` for a 2022 TV).
+    2. **Pick the build mode.** `--debug` (default, JIT, attachable) or
+       `--release` (AOT, signed for store). `--profile` for tracing builds.
+    3. **Pick the device profile** with `--device-profile {common|mobile|tv}`.
+       TV requires `tv`; common works for IOT-Headed.
+    4. **Pick the ABI** with `--target-arch {arm|arm64|x86}` (emulator
+       defaults to `x86`).
+    5. **Pick the certificate** with `--security-profile <name>` when the
+       active profile is wrong.
+    6. **Run** `flutter-tizen build tpk` with the chosen flags. The TPK lands
+       in `build/tizen/tpk/`.
+    7. **Verify the artifact.** `tizen package -t tpk -- <path>` validates
+       the manifest; `unzip -l <tpk>` inspects the contents.
+    8. **Diagnose signing failures.** `tizen security-profiles list` to
+       confirm the profile exists; re-create the distributor cert with the
+       device DUID registered if signing reports an unknown DUID.
+  resources:
+    - https://github.com/flutter-tizen/flutter-tizen/wiki/Build-an-app
+    - https://docs.tizen.org/application/tizen-studio/native-tools/manifest-text-editor
+    - https://docs.tizen.org/application/native/tutorials/sign-certificate
+
+- name: flutter-tizen-device
+  description: Connect to and run Flutter apps on Tizen devices and emulators
+    using `sdb`, `flutter-tizen run`, and `sdb dlog`. Use when bringing up a
+    TV / RPi / emulator target, when filtering noisy device logs, or when
+    attaching a debugger to a running app.
+  examplePrompt: "Connect my TV at 192.168.0.101 and tail Flutter console + engine logs only"
+  instructions: |
+    1. **Enable Developer Mode on the device.** TV: Apps → enter `12345`,
+       toggle Developer Mode, set host IP. Watch / RPi / IOT: enable in
+       Settings or via the wiki recipe.
+    2. **Connect over the network.** `sdb connect <ip>:26101`. Verify with
+       `sdb devices` — status must be `device`, not `offline` or
+       `unauthorized`.
+    3. **List flutter-tizen targets.** `flutter-tizen devices` should show
+       the same device ID (e.g. `192.168.0.101:26101` or
+       `emulator-26101`).
+    4. **Run the app.** `flutter-tizen run -d <device-id>` for debug;
+       `--release` and `--profile` are supported.
+    5. **Tail logs.** `sdb dlog 'ConsoleMessage:I' 'FlutterEngine:I' '*:S'`
+       isolates Flutter-only output. Drop the `*:S` suffix for unfiltered
+       output.
+    6. **Attach a debugger.** `flutter-tizen run` prints the Dart VM Service
+       URL. Open it in DevTools, or `flutter-tizen attach -d <device-id>` to
+       hot-reload into a running app.
+    7. **Disconnect cleanly.** `sdb disconnect <ip>:26101` when finished;
+       leftover offline entries break the next `flutter-tizen run`.
+  resources:
+    - https://github.com/flutter-tizen/flutter-tizen/wiki/Run-an-app
+    - https://docs.tizen.org/application/tizen-studio/common-tools/smart-development-bridge
+    - https://docs.tizen.org/application/tizen-studio/common-tools/log-view
+
+- name: flutter-tizen-tv-remote-input
+  description: Make a Flutter-Tizen UI navigable with the Samsung TV remote —
+    wire up D-pad focus traversal, OK/Back handling, color keys, and media
+    keys using Flutter's `Focus`/`FocusNode`/`Shortcuts`/`Actions`. Use when
+    targeting Samsung TV 2021+, when focus jumps incorrectly, or when remote
+    keys do nothing in a Flutter view.
+  examplePrompt: "Make the home screen navigable with the TV remote, including OK to activate and Back to pop"
+  instructions: |
+    1. **Wrap every focusable widget** in a `Focus`, `FocusableActionDetector`,
+       or built-in widget that already takes focus (`ElevatedButton`,
+       `InkWell`). Plain `GestureDetector` is invisible to focus traversal.
+    2. **Group focusable areas** with `FocusTraversalGroup` plus a policy
+       (`OrderedTraversalPolicy`, `ReadingOrderTraversalPolicy`,
+       `WidgetOrderTraversalPolicy`). Without a group, the D-pad jumps
+       unpredictably between rows / columns.
+    3. **Map remote keys to actions** with `Shortcuts` and `Actions`. The
+       Samsung TV remote sends standard `LogicalKeyboardKey.arrowUp/Down/
+       Left/Right`, `select`, and `escape`. Media keys map to
+       `LogicalKeyboardKey.mediaPlayPause`, `mediaTrackNext`, etc. Color
+       keys arrive as `f1`–`f4`.
+    4. **Show a focus highlight.** TVs sit ~3m away — invisible focus
+       guarantees lost users. Use `FocusableActionDetector` with
+       `onShowFocusHighlight`, or override the theme's focused state colors.
+    5. **Handle Back explicitly.** `LogicalKeyboardKey.escape` from the
+       remote should pop a route (`Navigator.maybePop`); without it, the
+       device exits the app.
+    6. **Test with the physical remote, not a USB keyboard.** Some keys
+       (color, exit, channel up/down) behave differently or do not raise a
+       Flutter key event.
+  resources:
+    - https://github.com/flutter-tizen/flutter-tizen/wiki/TV-app-development
+    - https://docs.tizen.org/application/web/guides/tv/key-events
+    - https://api.flutter.dev/flutter/widgets/Focus-class.html
+    - https://api.flutter.dev/flutter/widgets/Shortcuts-class.html
+
+- name: flutter-tizen-use-plugins
+  description: Pick and wire up Tizen-side Flutter plugins (Samsung-maintained
+    `*_tizen` packages and Tizen-exclusive plugins such as
+    `tizen_app_control`, `messageport_tizen`, `permission_handler_tizen`).
+    Use when a cross-platform plugin lacks Tizen support, when needing a
+    Tizen-only feature (app-control, messageport, package manager), or when
+    declaring privileges in `tizen-manifest.xml`.
+  examplePrompt: "Add location support to my app on Tizen, including the privilege declaration"
+  instructions: |
+    1. **Look up the right plugin.** Check the
+       github.com/flutter-tizen/plugins index. Three classes exist:
+       endorsed `<name>_tizen` (federated companion to an upstream plugin),
+       unendorsed `<name>_tizen` (still works, but the user must add it
+       explicitly), and Tizen-exclusive (`tizen_app_control`,
+       `messageport_tizen`, `tizen_package_manager`, …).
+    2. **Add the dependency.** For endorsed plugins, depend on the
+       cross-platform package; the `_tizen` implementation is pulled in
+       automatically. For unendorsed or Tizen-exclusive plugins, add the
+       package directly to `pubspec.yaml`.
+    3. **Run `flutter-tizen pub get`** — using vanilla `flutter pub get`
+       will not register the Tizen platform interface.
+    4. **Declare required privileges in `tizen-manifest.xml`.** Each plugin
+       lists its required privileges in its README; copy them under
+       `<privileges>` (e.g. `http://tizen.org/privilege/location`,
+       `http://tizen.org/privilege/internet`,
+       `http://tizen.org/privilege/camera`).
+    5. **Request privacy-related privileges at runtime** using
+       `permission_handler_tizen` for the categories Tizen classifies as
+       privacy-sensitive (location, camera, microphone, contacts).
+    6. **Rebuild the TPK.** Manifest changes do not hot-reload — the next
+       install must come from a fresh `flutter-tizen build tpk` /
+       `flutter-tizen run`.
+    7. **Verify on a real device.** Emulator behavior for some privileges
+       (location, sensor, Bluetooth) differs from real hardware.
+  resources:
+    - https://github.com/flutter-tizen/plugins
+    - https://github.com/flutter-tizen/plugins/tree/master/packages/permission_handler
+    - https://docs.tizen.org/application/native/guides/security/privilege-list
+    - https://docs.tizen.org/application/dotnet/get-started/manifest
+
+- name: flutter-tizen-create-plugin
+  description: Scaffold a new Tizen-side Flutter plugin (C++ or C#), wire it
+    to Dart through a method channel, declare the right privileges in
+    `tizen-manifest.xml`, and validate it against a device or emulator. Use
+    when no existing Tizen plugin wraps a needed Tizen Native API, or when
+    extending a cross-platform plugin with a `_tizen` implementation.
+  examplePrompt: "Wrap the Tizen system_info API as a new system_info_tizen plugin"
+  instructions: |
+    1. **Scaffold the package.**
+       ```
+       flutter-tizen create --template=plugin \
+           --platforms=tizen --tizen-language=cpp my_plugin_tizen
+       ```
+       Use `--tizen-language=csharp` only when the underlying API is .NET-
+       only (rare).
+    2. **Find the Tizen Native API** in
+       docs.tizen.org/application/native/api/<profile>/<version>/group/.
+       Note the privileges and the `pkg-config` module the API belongs to
+       (e.g. `capi-system-info`).
+    3. **Wire the C++ side** in `tizen/src/`. Implement
+       `OnMethodCall(const MethodCall&, std::unique_ptr<MethodResult>)`,
+       dispatch on `call.method_name()`, return `result->Success(...)` /
+       `result->Error(...)`.
+    4. **Link the Native module** in `tizen/project_def.prop`:
+       ```
+       APPNAME = my_plugin_tizen
+       type = sharedLib
+       USER_LIB_DIRS =
+       USER_INC_DIRS = inc src
+       USER_SRCS = src/my_plugin_tizen_plugin.cc
+       USER_LIBS = capi-system-info
+       USER_PKGS = capi-system-info
+       ```
+    5. **Declare privileges and features in `tizen-manifest.xml`** (under
+       `example/tizen/` for the example app). Include both `<privilege>`
+       and any `<feature>` requirements (e.g.
+       `http://tizen.org/feature/location`).
+    6. **Expose the Dart API** in `lib/my_plugin_tizen.dart` via a
+       `MethodChannel('my_plugin_tizen')` whose name matches the C++ side.
+    7. **Validate via the example app.** `cd example && flutter-tizen run
+       -d <device-id>` and exercise the API. Catch unexpected
+       `PlatformException`s by logging `e.code` and `e.message`.
+    8. **Add tests.** A `widget_test` mocking the method channel, plus an
+       `integration_test` that runs against the device for the
+       happy-path call.
+    9. **Document privileges and constraints** in the package README so
+       consumers know what to add to their own `tizen-manifest.xml`.
+  resources:
+    - https://github.com/flutter-tizen/flutter-tizen/wiki/Develop-a-plugin
+    - https://github.com/flutter-tizen/plugins
+    - https://docs.tizen.org/application/native/api/wearable/latest/index.html
+    - https://docs.flutter.dev/packages-and-plugins/developing-packages
+
+- name: flutter-tizen-app-lifecycle
+  description: Map Tizen's native app lifecycle callbacks (`app_create`,
+    `app_pause`, `app_resume`, `app_terminate`, low-memory, low-battery,
+    language/locale changes) onto Flutter's `AppLifecycleState` and
+    `WidgetsBindingObserver` hooks. Use when state needs to be persisted
+    across pause/resume, when memory pressure must be released, or when
+    behavior on launch differs from foreground-resume.
+  examplePrompt: "Save the current scroll position when the user presses Home, restore it on resume"
+  instructions: |
+    1. **Add a `WidgetsBindingObserver`.** A `StatefulWidget` mixes in
+       `WidgetsBindingObserver`, registers in `initState` with
+       `WidgetsBinding.instance.addObserver(this)`, unregisters in
+       `dispose`.
+    2. **Map Tizen native → Flutter states.** `app_create` → first frame
+       (no callback; use `initState`). `app_pause` →
+       `AppLifecycleState.paused`. `app_resume` → `resumed`.
+       `app_terminate` → `detached`. Low-memory pressure does not raise a
+       lifecycle event — listen with `WidgetsBindingObserver.didHaveMemoryPressure`.
+       Locale change → `didChangeLocales`.
+    3. **Persist on `paused`, not on `inactive`.** On Tizen `inactive` can
+       fire transiently (notification overlays, system dialogs); only
+       `paused` is a reliable "I am leaving" signal.
+    4. **Restore on `resumed`.** Read the persisted state during the
+       first frame after `resumed`, not in `initState` (which is the
+       cold-start path).
+    5. **Release memory on pressure.** In `didHaveMemoryPressure`, drop
+       image caches (`PaintingBinding.instance.imageCache.clear()`),
+       large in-memory lists, or precomputed buffers. The OS may kill
+       the app if memory is not released.
+    6. **Differentiate cold start vs. resume.** Cold start = `initState`
+       runs with no prior persisted timestamp. Resume = the observer's
+       `resumed` callback fires with persisted state present.
+    7. **Test on a real device, not just the emulator.** TV launchers and
+       background services trigger lifecycle events differently from the
+       desktop emulator.
+  resources:
+    - https://api.flutter.dev/flutter/widgets/WidgetsBindingObserver-class.html
+    - https://api.flutter.dev/flutter/dart-ui/AppLifecycleState.html
+    - https://docs.tizen.org/application/native/guides/app-management/applications
+    - https://docs.tizen.org/application/native/guides/app-management/event-system
+
+- name: flutter-tizen-integration-test-device
+  description: Run Flutter `integration_test` packages on a real Tizen
+    device or emulator using `flutter-tizen test --device-id=<id>`
+    (alternatively `flutter-tizen drive`). Use when validating end-to-end
+    flows on Tizen-specific hardware, when a feature only fails on TV/RPi,
+    or when adding a CI lane that targets a connected emulator.
+  examplePrompt: "Add an integration test that drives the D-pad through the settings flow on the TV emulator"
+  instructions: |
+    1. **Add the dependencies.**
+       ```
+       flutter-tizen pub add 'dev:integration_test:{"sdk":"flutter"}'
+       flutter-tizen pub add dev:flutter_test
+       ```
+    2. **Create `integration_test/` at the project root** and add test
+       files suffixed `_test.dart`. Each test calls
+       `IntegrationTestWidgetsFlutterBinding.ensureInitialized()` before
+       `testWidgets`.
+    3. **Drive the UI** with `WidgetTester`. Use
+       `tester.sendKeyEvent(LogicalKeyboardKey.arrowDown)` /
+       `LogicalKeyboardKey.select` for D-pad coverage on TV. Wrap
+       interactions with `tester.pumpAndSettle()` to absorb the longer
+       frame budget on TV / wearable.
+    4. **Run on a device.**
+       ```
+       sdb connect <ip>:26101
+       flutter-tizen test --device-id <id> integration_test/
+       ```
+       For a more flutter-driver-like setup, use
+       `flutter-tizen drive --driver=test_driver/integration_test.dart
+       --target=integration_test/app_test.dart`.
+    5. **Capture artifacts.** Wire
+       `IntegrationTestWidgetsFlutterBinding.takeScreenshot(<name>)` for
+       golden review; capture `reportData` for perf via
+       `binding.reportData = {...}` and `binding.serializeAccessibilityInfo`
+       for a11y.
+    6. **CI lane.** Boot the TV / wearable emulator headlessly via
+       `tizen emulator launch -n <vm-name> --skin no-skin`, run `sdb
+       connect`, then invoke `flutter-tizen test --device-id ...`.
+       Persist screenshots and a JUnit report.
+    7. **Diagnose stalls.** Tizen TV is slower than mobile — bump the
+       per-test timeout (`timeout: Timeout(Duration(minutes: 3))`) and
+       prefer `pumpAndSettle(Duration(seconds: 10))` over a bare `pump`.
+  resources:
+    - https://github.com/flutter-tizen/flutter-tizen/wiki/Run-an-app
+    - https://docs.flutter.dev/testing/integration-tests
+    - https://docs.flutter.dev/cookbook/testing/integration/introduction
+    - https://api.flutter.dev/flutter/package-integration_test_integration_test/IntegrationTestWidgetsFlutterBinding-class.html
