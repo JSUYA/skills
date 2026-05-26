@@ -114,7 +114,7 @@ class FooTizenPlugin : public flutter::Plugin {
             &flutter::StandardMethodCodec::GetInstance());
     auto plugin = std::make_unique<FooTizenPlugin>();
     channel->SetMethodCallHandler(
-        [p = plugin.get()](const auto &call, auto result) {
+        [p = plugin.get()] (const auto &call, auto result) {
           p->HandleMethodCall(call, std::move(result));
         });
     registrar->AddPlugin(std::move(plugin));
@@ -186,12 +186,43 @@ When implementing a federated platform interface instead, override the base plug
 
 `tizen/tizen-manifest.xml` ships with **no privileges** by default. Native APIs typically refuse to run without the right `<privilege>` line, even if the binary linked successfully.
 
-Lookup recipe:
+### Privilege categories
 
-1. Open the Tizen Native API doc for the function you're calling (e.g. `app_get_data_path` → "Required privileges: none").
-2. If a privilege URL is listed, add it under `<privileges>` in `tizen-manifest.xml`.
-3. If the privilege is a privacy privilege (e.g. `location`, `mediastorage`, `camera`), also request it at runtime — the *easy* path is `permission_handler_tizen`; the *manual* path is the Tizen `ppm_request_permission` C API.
-4. If the function needs a hardware feature (camera, bluetooth, NFC), add a matching `<feature>` selector so the package is filtered out on devices that lack the hardware.
+Tizen splits privileges into three tiers, each with a different signing cost:
+
+| Category | Examples | Signing requirement |
+|---|---|---|
+| **Public** | `internet`, `network.get`, `mediastorage`, `notification` | Any author certificate — signs out of the box. |
+| **Partner** | `appmanager.launch`, `usermanagement`, partner-only TV APIs | Samsung partner certificate; request access via the Samsung partner portal. |
+| **Platform** | `bluetooth.admin`, `network.profile`, `permission`, low-level VPN | Platform signature — only Tizen vendor builds. Not usable by third parties. |
+
+If a privilege the agent picks is Partner / Platform, surface the limitation explicitly — building will succeed locally but signing fails or the device rejects the TPK on install.
+
+### Privacy (runtime) privileges
+
+A privilege is **privacy-level** if Tizen surfaces a user consent popup at first use. Always assume privacy if the privilege touches identity, sensors, or media:
+
+- `location`
+- `camera`
+- `recorder` (microphone)
+- `mediastorage`
+- `externalstorage`
+- `contact`
+- `account`
+- `calendar`
+- `messaging.read` / `messaging.write`
+- `call`, `callhistory.read`
+- `healthinfo`
+- `sensor.*` (heart-rate, motion, …)
+
+These require **both** the manifest declaration *and* a runtime request — the manifest alone is not enough; calling the Native API without runtime consent throws `PRIVILEGE_DENIED`.
+
+### Lookup recipe
+
+1. Open the Tizen Native API doc for the function being called (e.g. `app_get_data_path` → "Required privileges: none"; `location_manager_start` → `http://tizen.org/privilege/location`).
+2. Add the URL under `<privileges>` in `tizen-manifest.xml`.
+3. If it is a privacy privilege, also request it at runtime.
+4. If the function needs a hardware feature (camera, bluetooth, NFC), add a matching `<feature>` selector so the package is filtered out on devices that lack the hardware. Without `<feature>`, the store install succeeds on incompatible hardware and the API throws at first call.
 
 Example with both:
 
@@ -199,9 +230,60 @@ Example with both:
 <privileges>
     <privilege>http://tizen.org/privilege/internet</privilege>
     <privilege>http://tizen.org/privilege/mediastorage</privilege>
+    <privilege>http://tizen.org/privilege/location</privilege>
 </privileges>
 <feature name="http://tizen.org/feature/network.internet"/>
+<feature name="http://tizen.org/feature/location"/>
 ```
+
+### Runtime permission flow
+
+Two supported paths:
+
+**Easy path — `permission_handler_tizen`:**
+
+```dart
+import 'package:permission_handler_tizen/permission_handler_tizen.dart';
+
+Future<bool> ensureLocation() async {
+  var status = await Permission.location.status;
+  if (status.isGranted) return true;
+  if (status.isPermanentlyDenied) {
+    // User checked "don't ask again" — open settings.
+    await openAppSettings();
+    return false;
+  }
+  status = await Permission.location.request();
+  return status.isGranted;
+}
+```
+
+**Manual path — Tizen `ppm_request_permission` C API:**
+
+```cpp
+#include <privacy_privilege_manager.h>
+
+void RequestLocation() {
+  ppm_request_permission(
+      "http://tizen.org/privilege/location",
+      [](ppm_call_cause_e cause,
+         ppm_request_result_e result,
+         const char* privilege,
+         void* user_data) {
+        // dispatch back to Dart via MethodChannel reply
+      },
+      this);
+}
+```
+
+Always handle three outcomes — granted, denied (re-ask later), denied-forever (open settings). Treating denied-forever as a re-prompt creates an infinite popup loop the user must force-quit.
+
+### Declaring privileges on both sides
+
+Plugin-side `tizen-manifest.xml` is *metadata only* — it describes what the plugin needs, but the host (example app, or consumer app) is what the OS actually evaluates at install / runtime. Two places must agree:
+
+- The plugin's own `tizen-manifest.xml` — for documentation, generator tooling, and the example app fallback.
+- Every consumer app's `tizen-manifest.xml` — the OS reads this one. Document the required privileges in the plugin README so consumers know what to copy.
 
 ## Workflow: Bring up a New Plugin
 

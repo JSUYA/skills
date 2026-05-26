@@ -182,6 +182,39 @@
     - https://docs.tizen.org/application/native/guides/security/privilege-list
     - https://docs.tizen.org/application/dotnet/get-started/manifest
 
+- name: flutter-tizen-tizen-tv-ui
+  description: Build a Tizen TV-friendly UI — overscan / safe area, large
+    default font scale, visible focus highlight, high-contrast accessibility,
+    and screen-reader labelling. Use when a layout is cut off on TV, when
+    text is unreadable at 3 m, when focus is invisible, or when an a11y audit
+    is required.
+  examplePrompt: "TV-ize this app: safe area, larger fonts, focus ring, screen-reader labels"
+  instructions: |
+    1. **Wrap the app shell** in a single `SafeArea` plus a 5% overscan
+       inset at `MaterialApp.builder` level — not per-screen.
+    2. **Lift the global text scale** with
+       `MediaQuery(textScaler: TextScaler.linear(1.6))`. Default body type
+       lives around 24–32 sp at TV distance.
+    3. **Replace tap-only interactions** with `FocusableActionDetector` /
+       `Focus`. Plain `GestureDetector` is invisible to the D-pad; pair
+       this skill with `flutter-tizen-tv-remote-input`.
+    4. **Draw an unmistakable focus highlight** — 4 px outline ring +
+       1.04× scale animated on focus state. Hover colours do not work on
+       TV remotes.
+    5. **Add `Semantics(label:, button: true)`** to every custom focusable
+       so Tizen's screen reader announces it.
+    6. **Audit colour contrast** at WCAG AA on a 6500 K calibrated TV.
+       Prefer light-on-dark for body content.
+    7. **Bump dialog timeouts.** TV users may need 10× longer than mobile
+       to respond; non-dismissing banners beat 3-second snackbars.
+    8. **Verify on a real TV**, not the desktop emulator — text rendering,
+       overscan margins, and remote behavior all differ.
+  resources:
+    - https://github.com/flutter-tizen/flutter-tizen/wiki/TV-app-development
+    - https://api.flutter.dev/flutter/widgets/FocusableActionDetector-class.html
+    - https://api.flutter.dev/flutter/widgets/Semantics-class.html
+    - https://docs.flutter.dev/ui/accessibility-and-internationalization/accessibility
+
 - name: flutter-tizen-create-plugin
   description: Scaffold a new Tizen-side Flutter plugin (C++ or C#), wire it
     to Dart through a method channel, declare the right privileges in
@@ -234,6 +267,84 @@
     - https://github.com/flutter-tizen/plugins
     - https://docs.tizen.org/application/native/api/wearable/latest/index.html
     - https://docs.flutter.dev/packages-and-plugins/developing-packages
+
+- name: flutter-tizen-app-control
+  description: Send and receive Tizen App Control intents from a Flutter
+    app — start another app by operation / URI / MIME, receive a launch
+    request, return a reply, and implement deep linking. Use when
+    integrating with the Tizen launcher, settings, or another Tizen app,
+    or when wiring deep-link entry points. The `tizen_app_control` plugin
+    is the API surface; this skill covers the workflow on top of it.
+  examplePrompt: "Open the system Settings app from Flutter, then accept a launch back from it"
+  instructions: |
+    1. **Decide direction.** Sending only, receiving only, or both —
+       receiving requires an `<app-control>` block in `tizen-manifest.xml`
+       declaring each supported operation / uri / mime.
+    2. **Add `tizen_app_control` to `pubspec.yaml`** and run
+       `flutter-tizen pub get`.
+    3. **Send a launch** with
+       `AppControl(operation: ..., appId: ..., uri: ..., extraData: ...)
+       .sendLaunchRequest()`. Pin `appId` to target system apps (Settings,
+       Email); let URI/MIME resolution pick a handler otherwise.
+    4. **Read the cold-start intent** with
+       `AppControl.fromInitialIntent()` in `main` before `runApp`. The
+       warm-receive stream `AppControl.onAppControl` does *not* fire for
+       a cold start.
+    5. **Subscribe to `AppControl.onAppControl`** for warm receives —
+       always subscribe in `main`, not in a screen widget's `initState`.
+    6. **Reply when invoked-for-result** with `event.reply(extraData:,
+       result:)`. Forgetting to reply hangs the caller until its timeout.
+    7. **Map URIs to the in-app router.** Reuse the same routing logic
+       for deep links and regular navigation; avoid a parallel handler.
+    8. **Test cold-start and warm receive separately** on a real device.
+       Emulator launcher behavior differs from a real TV's Smart Hub.
+  resources:
+    - https://github.com/flutter-tizen/plugins/tree/master/packages/tizen_app_control
+    - https://docs.tizen.org/application/native/guides/app-management/app-controls
+    - https://docs.tizen.org/application/native/guides/app-management/common-appcontrols
+
+- name: flutter-tizen-background-service
+  description: Build a Tizen service application that runs alongside the
+    Flutter UI app, and wire two-way communication between them via
+    `messageport_tizen`. Use when work must continue after the UI is
+    paused (sync, telemetry, sensor polling), when the UI must wake a
+    background worker, or when a long-running task must survive UI
+    process termination.
+  examplePrompt: "Add a service app that polls a sensor and sends results to the UI when the UI is foreground"
+  instructions: |
+    1. **Confirm a service is required.** Work that fits in one UI
+       pause/resume cycle should use `flutter-tizen-app-lifecycle`
+       instead; a service is for outliving the UI process.
+    2. **Scaffold a service** via
+       `flutter-tizen create --template=app --tizen-language=cpp <name>`
+       (or add a second `<service-application>` to the existing
+       manifest).
+    3. **Declare `<service-application>` and privileges** in the
+       service's `tizen-manifest.xml`. `on-boot="true"` is TV-only;
+       `auto-restart="true"` needs a backoff guard.
+    4. **Start / stop from the UI** with `tizen_app_control` —
+       `AppControl(appId: ...).sendLaunchRequest()` to start,
+       `AppControl(appId: ...).terminate()` to stop. Pair with
+       `flutter-tizen-app-control`.
+    5. **Open a `messageport_tizen` channel.** Service creates
+       `LocalPort(...)` and registers a handler; UI opens
+       `RemotePort.connect(appId, portName)` and sends messages. Use one
+       port per topic.
+    6. **Keep the service alive.** Without an open `Stream`, `Timer`, or
+       `Completer`, the Dart isolate exits and Tizen shuts the process.
+    7. **Cap memory.** Service apps holding > ~80 MB on TV are killed
+       first under pressure. Drop caches on `didHaveMemoryPressure`;
+       move heavy compute to a Dart `Isolate`.
+    8. **Build both packages**, install both, then verify the service
+       survives UI pause by sending the UI home (`sdb shell wm-tool
+       home`) while watching `sdb dlog` for the service.
+    9. **Add an integration test** that drives UI → service → UI
+       round-trip; reuse `flutter-tizen-integration-test-device`.
+  resources:
+    - https://github.com/flutter-tizen/plugins/tree/master/packages/messageport
+    - https://docs.tizen.org/application/native/guides/app-management/service-app
+    - https://docs.tizen.org/application/native/guides/app-management/message-port
+    - https://github.com/flutter-tizen/flutter-tizen/wiki/Develop-an-app
 
 - name: flutter-tizen-app-lifecycle
   description: Map Tizen's native app lifecycle callbacks (`app_create`,
