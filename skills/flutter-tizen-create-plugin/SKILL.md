@@ -149,12 +149,28 @@ void FooTizenPluginRegisterWithRegistrar(
 }
 ```
 
-If the Tizen API needs link-time libraries, add them in `tizen/project_def.prop`:
+If the Tizen API needs link-time libraries, edit `tizen/project_def.prop`. There are two fields to keep straight:
 
 ```
-USER_LIBS = capi-appfw-app-common
+# Source files (already present)
+USER_SRCS += src/*.cc
+
+# Tizen Native pkg-config module names — resolves both include dirs and
+# link libraries via pkg-config. Use this for capi-* / dlog / vconf / ...
+USER_PKGS = capi-appfw-app-common capi-system-info
+
+# Plain link libraries (no -l prefix, no pkg-config). Use this for
+# system libs like pthread or for sharedLib plugins that link the
+# Flutter embedder directly.
+USER_LIBS =
+
 USER_INC_DIRS = inc src
 ```
+
+Two pitfalls here:
+
+- **`capi-*` belongs in `USER_PKGS`, not `USER_LIBS`.** They are pkg-config modules; resolving them with `USER_LIBS` silently misses the include paths and the build fails at link time with `undefined reference`.
+- **Default plugin scaffold is `type = staticLib`.** The plugin is linked into the host TPK at app-build time, so most plugins do not need `USER_LIBS` at all — listing `USER_PKGS` is enough. `USER_LIBS` is mainly needed for `type = sharedLib` plugins (see flutter-tizen PR #407 for that path).
 
 Event channels — replace `MethodChannel` with `EventChannel<flutter::EncodableValue>` and emit via the `StreamHandler` callback.
 

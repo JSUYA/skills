@@ -48,7 +48,7 @@
 - name: flutter-tizen-build-tpk
   description: Build, sign, and inspect Tizen TPK packages for Flutter apps
     with `flutter-tizen build tpk`. Use when producing a deployable artifact
-    for a specific device profile (common, mobile, tv), when troubleshooting
+    for a specific device profile (`common` or `tv`), when troubleshooting
     signing failures, or when controlling ABI / build mode for emulator vs.
     real device.
   examplePrompt: "Build a signed release TPK for Samsung TV 2022"
@@ -56,12 +56,16 @@
     1. **Confirm `tizen-manifest.xml` matches the target.** `<manifest
        profile="..."` and `api-version` must match the device profile (e.g.
        `tv` + `6.5` for a 2022 TV).
-    2. **Pick the build mode.** `--debug` (default, JIT, attachable) or
-       `--release` (AOT, signed for store). `--profile` for tracing builds.
-    3. **Pick the device profile** with `--device-profile {common|mobile|tv}`.
-       TV requires `tv`; common works for IOT-Headed.
-    4. **Pick the ABI** with `--target-arch {arm|arm64|x86}` (emulator
-       defaults to `x86`).
+    2. **Pick the build mode.** `--debug` (JIT, attachable, emulator-only)
+       or `--release` (AOT, signed for store, default). `--profile` for
+       tracing builds.
+    3. **Pick the device profile** with `--device-profile {common|tv}`.
+       TV requires `tv`; phone, IoT-Headed, and Raspberry Pi targets use
+       `common`. `mobile` and `wearable` are not documented in current
+       `flutter-tizen` `doc/commands.md`.
+    4. **Pick the ABI** with `--target-arch` — `arm` / `arm64` for real
+       hardware; `x86` for TV emulator; `x64` for newer common emulator.
+       Confirm with `sdb shell uname -m`.
     5. **Pick the certificate** with `--security-profile <name>` when the
        active profile is wrong.
     6. **Run** `flutter-tizen build tpk` with the chosen flags. The TPK lands
@@ -182,7 +186,7 @@
     - https://docs.tizen.org/application/native/guides/security/privilege-list
     - https://docs.tizen.org/application/dotnet/get-started/manifest
 
-- name: flutter-tizen-tizen-tv-ui
+- name: flutter-tizen-tv-ui
   description: Build a Tizen TV-friendly UI — overscan / safe area, large
     default font scale, visible focus highlight, high-contrast accessibility,
     and screen-reader labelling. Use when a layout is cut off on TV, when
@@ -270,33 +274,43 @@
 
 - name: flutter-tizen-app-control
   description: Send and receive Tizen App Control intents from a Flutter
-    app — start another app by operation / URI / MIME, receive a launch
-    request, return a reply, and implement deep linking. Use when
-    integrating with the Tizen launcher, settings, or another Tizen app,
-    or when wiring deep-link entry points. The `tizen_app_control` plugin
-    is the API surface; this skill covers the workflow on top of it.
+    app via the `tizen_app_control` plugin — launch another app by
+    `appId` or `operation` / `uri` / `mime`, accept incoming launch
+    requests, return a reply, and implement deep linking. Use when
+    integrating with the Tizen launcher / Settings / another Tizen app,
+    or when wiring deep-link entry points.
   examplePrompt: "Open the system Settings app from Flutter, then accept a launch back from it"
   instructions: |
-    1. **Decide direction.** Sending only, receiving only, or both —
-       receiving requires an `<app-control>` block in `tizen-manifest.xml`
-       declaring each supported operation / uri / mime.
-    2. **Add `tizen_app_control` to `pubspec.yaml`** and run
+    1. **Add `tizen_app_control` to `pubspec.yaml`** and run
        `flutter-tizen pub get`.
-    3. **Send a launch** with
-       `AppControl(operation: ..., appId: ..., uri: ..., extraData: ...)
-       .sendLaunchRequest()`. Pin `appId` to target system apps (Settings,
-       Email); let URI/MIME resolution pick a handler otherwise.
-    4. **Read the cold-start intent** with
-       `AppControl.fromInitialIntent()` in `main` before `runApp`. The
-       warm-receive stream `AppControl.onAppControl` does *not* fire for
-       a cold start.
-    5. **Subscribe to `AppControl.onAppControl`** for warm receives —
-       always subscribe in `main`, not in a screen widget's `initState`.
-    6. **Reply when invoked-for-result** with `event.reply(extraData:,
-       result:)`. Forgetting to reply hangs the caller until its timeout.
-    7. **Map URIs to the in-app router.** Reuse the same routing logic
-       for deep links and regular navigation; avoid a parallel handler.
-    8. **Test cold-start and warm receive separately** on a real device.
+    2. **Send a launch** by constructing `AppControl(appId: ..., operation:
+       ..., uri: ..., extraData: ...)` and calling `sendLaunchRequest()`.
+       Pin `appId` for system targets (Settings, Email); let URI/MIME
+       resolution pick a handler otherwise.
+    3. **Launch-and-await-reply** with
+       `appControl.sendLaunchRequest(replyCallback: (request, reply,
+       result) { ... })`. There is no `sendLaunchRequestForResult` —
+       the named-callback form is the only path.
+    4. **Receive launches by subscribing to `AppControl.onAppControl`** in
+       `main` before `runApp`. The stream yields `ReceivedAppControl` for
+       both the cold-start launch and subsequent in-process launches.
+       Subscribing inside a widget's `initState` is the typical reason
+       deep links fail on cold start.
+    5. **Declare supported operations** in `tizen-manifest.xml` under
+       `<app-control>` — `<operation>`, `<uri>`, `<mime>` as needed —
+       so the OS routes incoming requests.
+    6. **Reply when `request.shouldReply` is true** using
+       `request.reply(AppControl(extraData: {...}),
+       AppControlReplyResult.succeeded)`. The reply payload is itself an
+       `AppControl`; the second argument is the enum
+       (`succeeded`/`failed`/`cancelled`).
+    7. **Terminate another app** with
+       `AppControl(appId: ...).sendTerminateRequest()`. There is no
+       `terminate()` helper. Requires
+       `http://tizen.org/privilege/appmanager.kill` or `.kill.bgapp`.
+    8. **Map URIs to the in-app router.** Reuse the same routing logic
+       for deep links and regular navigation.
+    9. **Test cold-start and warm receive separately** on a real device.
        Emulator launcher behavior differs from a real TV's Smart Hub.
   resources:
     - https://github.com/flutter-tizen/plugins/tree/master/packages/tizen_app_control
@@ -324,20 +338,22 @@
        `auto-restart="true"` needs a backoff guard.
     4. **Start / stop from the UI** with `tizen_app_control` —
        `AppControl(appId: ...).sendLaunchRequest()` to start,
-       `AppControl(appId: ...).terminate()` to stop. Pair with
-       `flutter-tizen-app-control`.
-    5. **Open a `messageport_tizen` channel.** Service creates
-       `LocalPort(...)` and registers a handler; UI opens
-       `RemotePort.connect(appId, portName)` and sends messages. Use one
-       port per topic.
+       `AppControl(appId: ...).sendTerminateRequest()` to stop (requires
+       `http://tizen.org/privilege/appmanager.kill` or `.kill.bgapp`).
+       Pair with `flutter-tizen-app-control`.
+    5. **Open a `messageport_tizen` channel.** Service calls
+       `await LocalPort.create('<port>')` then `port.register(callback)`;
+       UI calls `await RemotePort.connect('<serviceAppId>', '<port>')`.
+       Use `sendWithLocalPort` to attach a reply port. No `onMessage`
+       stream — the registered callback is the only delivery channel.
     6. **Keep the service alive.** Without an open `Stream`, `Timer`, or
        `Completer`, the Dart isolate exits and Tizen shuts the process.
     7. **Cap memory.** Service apps holding > ~80 MB on TV are killed
        first under pressure. Drop caches on `didHaveMemoryPressure`;
        move heavy compute to a Dart `Isolate`.
     8. **Build both packages**, install both, then verify the service
-       survives UI pause by sending the UI home (`sdb shell wm-tool
-       home`) while watching `sdb dlog` for the service.
+       survives UI pause by pressing Home on the device / remote and
+       watching `sdb dlog` for the service.
     9. **Add an integration test** that drives UI → service → UI
        round-trip; reuse `flutter-tizen-integration-test-device`.
   resources:

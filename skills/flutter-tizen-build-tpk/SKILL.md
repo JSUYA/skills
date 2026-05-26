@@ -1,6 +1,6 @@
 ---
 name: flutter-tizen-build-tpk
-description: Build, sign, and inspect Tizen TPK packages for Flutter apps with `flutter-tizen build tpk`. Use when producing a deployable artifact for a specific device profile (common, mobile, tv), when troubleshooting signing failures, or when controlling ABI / build mode for emulator vs. real device.
+description: Build, sign, and inspect Tizen TPK packages for Flutter apps with `flutter-tizen build tpk`. Use when producing a deployable artifact for a specific device profile (`common` or `tv`), when troubleshooting signing failures, or when controlling ABI / build mode for emulator vs. real device.
 metadata:
   target: flutter-tizen
   category: build
@@ -27,7 +27,7 @@ build/tizen/tpk/<projectName>-<version>-<arch>.tpk
 
 Three knobs control the output:
 
-- `--device-profile {common|mobile|tv}` — selects which Tizen profile the package targets. Default is `tv`. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** (Wearable target is not supported by current flutter-tizen — use 3.16.2 or older for Galaxy Watch.)
+- `--device-profile {common|tv}` — selects which Tizen profile the package targets. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** Older device profiles (`mobile`, `wearable`) are no longer supported by current flutter-tizen — use 3.16.2 or older for Galaxy Watch; phone targets land under `common`. The official `flutter-tizen` `doc/commands.md` only documents `common` and `tv`.
 - `--target-arch {arm|arm64|x86|x64}` — must match the device CPU. Default is `arm`. Emulators are `x86` (TV emulator, historically 32-bit) or `x64` (common 10.x emulator, 64-bit — verify with `sdb shell uname -m`); real TVs and RPi are `arm` or `arm64`.
 - `--debug` / `--profile` / `--release` — Flutter build mode. Defaults to `--release`. Emulators require a JIT-capable build, i.e. `--debug`.
 

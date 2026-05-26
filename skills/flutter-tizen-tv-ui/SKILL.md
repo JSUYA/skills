@@ -1,5 +1,5 @@
 ---
-name: flutter-tizen-tizen-tv-ui
+name: flutter-tizen-tv-ui
 description: Build a Tizen TV-friendly UI — overscan / safe area, large default font scale, visible focus highlight, high-contrast accessibility, and screen-reader (TalkBack-equivalent) labelling. Use when a layout is cut off on TV, when text is unreadable at 3 m, when focus is invisible, or when an a11y audit is required.
 metadata:
   target: flutter-tizen

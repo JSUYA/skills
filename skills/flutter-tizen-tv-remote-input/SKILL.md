@@ -44,7 +44,19 @@ Flutter receives Tizen remote keys as `LogicalKeyboardKey` values. Map of the ke
 | Color keys (Red / Green / Yellow / Blue) | `colorF0Red`, `colorF1Green`, `colorF2Yellow`, `colorF3Blue` | Optional, used for power-user shortcuts |
 | Number 0–9 | `digit0` … `digit9` | Useful for jump-to-row in long lists |
 
-If a key prints to `flutter logs` as `Key { keyId: 0x... }` with no logical mapping, fall back to matching by `physicalKey` or `event.data` — but first verify the `flutter-tizen` Flutter version is current; older builds were missing several TV codes.
+**Known mapping gap (flutter-tizen issue #319).** On several Samsung TV models the embedder forwards remote keys with arbitrary scan codes (F1–F12, Left Shift, even media keys reported as "Brightness Auto") instead of the matching `LogicalKeyboardKey`. If a key prints to `flutter logs` as `KeyEvent { logical: Key { keyId: 0x... } }` with no symbolic mapping:
+
+1. Capture the `KeyEvent.physicalKey` value on a `KeyDownEvent` for that button and pin the dispatch to the physical key:
+   ```dart
+   if (event is KeyDownEvent &&
+       event.physicalKey == PhysicalKeyboardKey.f1) {
+     return KeyEventResult.handled;
+   }
+   ```
+2. Centralise the raw-scan-code overrides in one `Shortcuts` widget high in the tree so per-screen code remains symbolic.
+3. File a follow-up on the device model — flutter-tizen has been closing these one-by-one (see issue #319 history). Avoid hard-coding the override permanently if a fixed embedder version may ship.
+
+Always verify the installed `flutter-tizen` Flutter version is current before working around a missing key — older builds were missing several TV codes that current main has.
 
 ## Architecture: Focus, Shortcuts, Actions
 

@@ -75,11 +75,11 @@ Future<void> startWorker() async {
 Future<void> stopWorker() async {
   await AppControl(
     appId: 'org.example.myapp.service',
-  ).terminate();
+  ).sendTerminateRequest();
 }
 ```
 
-Tizen treats service launches as App Control requests; pair this with [flutter-tizen-app-control](../flutter-tizen-app-control/SKILL.md). Pass startup parameters via `extraData`.
+Tizen treats service launches as App Control requests; pair this with [flutter-tizen-app-control](../flutter-tizen-app-control/SKILL.md). Pass startup parameters via `extraData`. The `sendTerminateRequest` path requires `http://tizen.org/privilege/appmanager.kill` (or `.kill.bgapp`) and assumes the caller owns the service or is signed under the same author.
 
 ## Communicate via messageport
 
@@ -89,13 +89,15 @@ Tizen treats service launches as App Control requests; pair this with [flutter-t
 // In the service app
 import 'package:messageport_tizen/messageport_tizen.dart';
 
+LocalPort? _port;
+
 Future<void> bootService() async {
-  final port = await LocalPort.create('worker_in');
-  port.register((message, replyTo) async {
-    final cmd = message['cmd'] as String?;
-    if (cmd == 'poll') {
+  _port = await LocalPort.create('worker_in');
+  _port!.register((dynamic message, [RemotePort? replyTo]) async {
+    final cmd = (message as Map)['cmd'] as String?;
+    if (cmd == 'poll' && replyTo != null) {
       final value = await readSensor();
-      replyTo?.send({'value': value});
+      await replyTo.send({'value': value});
     }
   });
 }
@@ -103,17 +105,21 @@ Future<void> bootService() async {
 
 ```dart
 // In the UI app
-final remote = await RemotePort.connect(
+final RemotePort remote = await RemotePort.connect(
   'org.example.myapp.service',
   'worker_in',
 );
-await remote.send({'cmd': 'poll'});
-remote.onMessage.listen((reply) {
-  setState(() => latest = reply['value']);
+// Listen for service replies via our own LocalPort
+final LocalPort inbox = await LocalPort.create('ui_inbox');
+inbox.register((dynamic message, [RemotePort? sender]) {
+  setState(() => latest = (message as Map)['value']);
 });
+await remote.sendWithLocalPort({'cmd': 'poll'}, inbox);
 ```
 
 Local port name and remote app ID together form the addressing tuple — both sides must agree. Use distinct ports for distinct topics (one port per concern) instead of multiplexing.
+
+`messageport_tizen` does not expose an `onMessage` stream; the registered callback is the only delivery channel. Pass a `LocalPort` via `sendWithLocalPort` when the sender wants replies back.
 
 ## Lifecycle and resource budget
 
@@ -135,7 +141,7 @@ Copy this checklist when introducing a service app to a project:
 - [ ] **Step 4: Wire start / stop** from the UI via `tizen_app_control` (see [flutter-tizen-app-control](../flutter-tizen-app-control/SKILL.md)).
 - [ ] **Step 5: Open a `messageport_tizen` channel** with a clear port name per topic.
 - [ ] **Step 6: Build and install both packages** — UI and service are separate TPKs.
-- [ ] **Step 7: Verify the service survives UI pause** by sending it to background (`sdb shell wm-tool home`) and confirming logs continue.
+- [ ] **Step 7: Verify the service survives UI pause** by sending the UI to the background (press Home on the physical device / remote) and confirming `sdb dlog` for the service keeps emitting.
 - [ ] **Step 8: Audit resource budget** with `sdb shell top -p <pid>` while the service runs.
 - [ ] **Step 9: Add an integration test** that drives the UI → service → UI round trip; see [flutter-tizen-integration-test-device](../flutter-tizen-integration-test-device/SKILL.md).
 
