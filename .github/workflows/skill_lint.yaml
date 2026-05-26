@@ -1,0 +1,40 @@
+name: skill_lint
+permissions: read-all
+
+# Validate every SKILL.md against the dart_skills_lint spec. Mirrors the
+# upstream flutter/skills `validate_skills` job. Runs on PR + main push +
+# weekly schedule so dropped GitHub repo refs / dead manifests get caught.
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'resources/flutter_tizen_skills.yaml'
+      - 'tool/dart_skills_lint/**'
+      - '.github/workflows/skill_lint.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'resources/flutter_tizen_skills.yaml'
+      - 'tool/dart_skills_lint/**'
+      - '.github/workflows/skill_lint.yaml'
+  schedule:
+    - cron: '0 0 * * 0'  # weekly
+
+jobs:
+  validate_skills:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tool/dart_skills_lint
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - run: dart pub get
+
+      - name: Lint every SKILL.md under ../../skills
+        run: dart run bin/cli.dart -d ../../skills

@@ -17,12 +17,35 @@ Six skills covering Tizen-only workflows where a generic Flutter agent fails: to
 
 ## Install
 
-Drop the `skills/` subtree into the agent's skills directory. Most agents (Claude Code, Codex CLI, Gemini CLI, Cursor) read from one of:
+Use the [`npx skills`](https://github.com/vercel-labs/skills) CLI from Vercel Labs. It scans the conventional `skills/<name>/SKILL.md` layout and installs into whichever agent directory the active agent reads from (Claude Code, Codex CLI, Cursor, Gemini CLI, Cline, GitHub Copilot, Antigravity, +50 more — auto-detected).
 
-- `<project>/.agents/skills/<skill-name>/SKILL.md`
-- `~/.codex/skills/<skill-name>/SKILL.md` (Codex CLI)
+```bash
+# Install all 6 skills into the active agent's skill directory
+npx skills add JSUYA/flutter_tizen_skills --skill '*' --agent universal
 
-Either copy or symlink each `skills/flutter-tizen-*` folder into the target directory.
+# Or pick a subset
+npx skills add JSUYA/flutter_tizen_skills --skill flutter-tizen-setup,flutter-tizen-build-tpk
+
+# Global (user-level) install
+npx skills add JSUYA/flutter_tizen_skills --skill '*' --global
+
+# List what is available without installing
+npx skills add JSUYA/flutter_tizen_skills --list
+
+# Update later
+npx skills update
+```
+
+The CLI drops files into:
+
+| Agent | Path |
+|---|---|
+| Project (universal) | `./.agents/skills/<name>/SKILL.md` |
+| Claude Code | `./.claude/skills/<name>/` (project) or `~/.claude/skills/` (global) |
+| Codex CLI | `./.agents/skills/<name>/` (project) or `~/.codex/skills/` (global) |
+| Cursor | `./.agents/skills/<name>/` (project) or `~/.cursor/skills/` (global) |
+
+Manual install also works — copy or symlink any `skills/flutter-tizen-*/` folder into the target directory.
 
 ## Layout
 
