@@ -7,7 +7,11 @@ import 'package:flutter/material.dart';
 import 'remote_button.dart';
 
 class HomeGrid extends StatelessWidget {
-  const HomeGrid({super.key, required this.items, required this.onTileSelected});
+  const HomeGrid({
+    super.key,
+    required this.items,
+    required this.onTileSelected,
+  });
 
   final List<String> items; // 12 entries
   final ValueChanged<int> onTileSelected;

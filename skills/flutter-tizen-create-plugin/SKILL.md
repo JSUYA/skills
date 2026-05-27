@@ -4,6 +4,7 @@ description: Scaffold a new Tizen-side Flutter plugin (C++ or C#), wire it to Da
 metadata:
   target: flutter-tizen
   category: plugins
+  last_modified: Wed, 27 May 2026 08:02:04 GMT
 ---
 # Creating a Tizen Flutter plugin
 
@@ -11,11 +12,11 @@ metadata:
 
 | Language | When to pick it | When not to |
 |---|---|---|
-| **C++** | The Tizen Native API you need is a C header (`<system_info.h>`, `<app_control.h>`, `<bluetooth.h>`, …). Most TV-supported APIs are C. | TV does not support .NET runtime apps — avoid C# for TV plugins. |
-| **C#** | Targeting Tizen .NET / common profile and the API is exposed via Tizen.* assemblies. | TV (no .NET runtime), or perf-sensitive native loops. |
+| **C++** | The Tizen Native API you need is a C header (`<system_info.h>`, `<app_control.h>`, `<bluetooth.h>`, …). C++ plugins work with both C++ and C# app projects. | The API is only exposed through Tizen.* .NET assemblies. |
+| **C#** | The host app is a C# Tizen app and the API is exposed via Tizen.* assemblies. | C++ app projects, cross-app plugin reuse, or perf-sensitive native loops. |
 | **Dart FFI** | The API is a stable C ABI exposed by a system shared library and there's no event-callback handshake needed. | Anything that needs Tizen lifecycle bindings, registrar messengers, or `Ecore_*` mainloop integration. |
 
-This skill focuses on **C++ plugins**, which are the path you take for almost everything TV.
+This skill focuses on **C++ plugins**, which are the default flutter-tizen plugin scaffold and the reusable path across app project languages.
 
 ## Decide: standalone vs federated implementation
 
@@ -54,8 +55,8 @@ foo_tizen/
 │   ├── src/foo_tizen_plugin.cc              # C++ implementation
 │   ├── src/log.h
 │   ├── project_def.prop                     # Tizen native build settings
-│   └── tizen-manifest.xml                   # privileges + appid metadata
 ├── example/                                 # runnable harness app
+│   └── tizen/tizen-manifest.xml             # privileges + appid metadata
 └── pubspec.yaml
 ```
 
@@ -189,7 +190,7 @@ When implementing a federated platform interface instead, override the base plug
 
 ## Declare privileges and features
 
-`tizen/tizen-manifest.xml` ships with **no privileges** by default. Native APIs typically refuse to run without the right `<privilege>` line, even if the binary linked successfully.
+The generated plugin package does not include a runtime app manifest; the generated example app has `example/tizen/tizen-manifest.xml` with **no privileges** by default. Native APIs typically refuse to run without the right `<privilege>` line, even if the binary linked successfully.
 
 For privilege categories (public / partner / platform), the privacy privilege list, and the Dart-side `permission_handler_tizen` flow, see [flutter-tizen-use-plugins](../flutter-tizen-use-plugins/SKILL.md). This section covers plugin-specific concerns.
 
@@ -198,7 +199,7 @@ If a privilege the agent picks is Partner / Platform, surface the limitation exp
 ### Lookup recipe
 
 1. Open the Tizen Native API doc for the function being called (e.g. `app_get_data_path` → "Required privileges: none"; `location_manager_start` → `http://tizen.org/privilege/location`).
-2. Add the URL under `<privileges>` in `tizen-manifest.xml`.
+2. Add the URL under `<privileges>` in the host app's `tizen/tizen-manifest.xml` and in the plugin's example app manifest or documented snippet.
 3. If it is a privacy privilege, also request it at runtime.
 4. If the function needs a hardware feature (camera, bluetooth, NFC), add a matching `<feature>` selector so the package is filtered out on devices that lack the hardware. Without `<feature>`, the store install succeeds on incompatible hardware and the API throws at first call.
 
@@ -238,9 +239,9 @@ Always handle three outcomes — granted, denied (re-ask later), denied-forever 
 
 ### Declaring privileges on both sides
 
-Plugin-side `tizen-manifest.xml` is *metadata only* — the host (example app, or consumer app) is what the OS evaluates at install / runtime. Two places must agree:
+Plugin package manifests are *metadata only* when present — the host app is what the OS evaluates at install / runtime. Two places must agree:
 
-- The plugin's own `tizen-manifest.xml` — for documentation, generator tooling, and the example app fallback.
+- The plugin's documented manifest snippet or example app `tizen/tizen-manifest.xml` — for documentation, generator tooling, and the example app fallback.
 - Every consumer app's `tizen-manifest.xml` — the OS reads this one. Document the required privileges in the plugin README so consumers know what to copy.
 
 ## Workflow: Bring up a New Plugin
@@ -250,8 +251,8 @@ Plugin-side `tizen-manifest.xml` is *metadata only* — the host (example app, o
 - [ ] **Step 2: Scaffold** with `flutter-tizen create --template plugin --tizen-language cpp`.
 - [ ] **Step 3: Update `pubspec.yaml`** with the Tizen `pluginClass` and `fileName`.
 - [ ] **Step 4: Replace `getPlatformVersion`** in the C++ source with the real Tizen Native API call.
-- [ ] **Step 5: Add link libs** in `tizen/project_def.prop` (`USER_LIBS`, `USER_INC_DIRS`).
-- [ ] **Step 6: Add `<privilege>` and `<feature>` entries** in both the plugin's own `tizen-manifest.xml` and the example app's `tizen-manifest.xml`.
+- [ ] **Step 5: Add native API packages** in `tizen/project_def.prop` (`USER_PKGS` for `capi-*`; `USER_LIBS` only for plain libraries without pkg-config).
+- [ ] **Step 6: Add `<privilege>` and `<feature>` entries** in the plugin's documented manifest snippet and the example app's `tizen/tizen-manifest.xml`.
 - [ ] **Step 7: Define the Dart API** in `lib/<plugin>.dart` and the method-channel layer in `lib/<plugin>_method_channel.dart`.
 - [ ] **Step 8: Build the example app** for the target profile, install, and exercise every Dart method while watching `sdb dlog`.
 - [ ] **Step 9: Add `flutter_test` widget tests** at minimum; integration tests on a real device if the API depends on Tizen runtime state.
@@ -287,10 +288,9 @@ void main() {
 
 ## Pitfalls
 
-- **Privilege missing from the *example app's* manifest.** Plugin manifest is metadata only; the host app's manifest decides runtime privileges. Both must declare the privilege.
+- **Privilege missing from the *example app's* manifest.** Plugin metadata/snippets are documentation; the host app's manifest decides runtime privileges. The runnable example must declare the privilege.
 - **Wrong `api-version`.** A plugin built for `6.0` won't load on a `5.5` device; bumping it past what the device firmware supports breaks `install`. Test on the lowest device version you ship for.
 - **`USER_LIBS` syntax.** Library names are bare (`capi-appfw-app-common`), not `-lcapi-appfw-app-common`. The build accepts the wrong form silently and fails at link time with `undefined reference`.
-- **Plugin not registered in TPK.** Confirm the plugin's `.so` is packed by `unzip -l build/tizen/tpk/*.tpk | grep <plugin>`. If missing, `flutter-tizen clean` and rebuild.
+- **Plugin not registered in TPK.** For default `staticLib` plugins, confirm `lib/libflutter_plugins.so` is packed by `unzip -l build/tizen/tpk/*.tpk | grep libflutter_plugins`; only `sharedLib` plugins appear as a plugin-named `.so`. If missing, `flutter-tizen clean` and rebuild.
 - **Hot reload skips native changes.** Editing `.cc` requires a full rebuild + reinstall. Only Dart-side changes hot-reload.
 - **Memory leaks from Tizen `free`-required strings.** Any Tizen API that returns `char *` typically transfers ownership; always `free()` after copying into `std::string`, as in the template.
-

@@ -4,6 +4,7 @@ description: Connect to and run Flutter apps on Tizen devices and emulators usin
 metadata:
   target: flutter-tizen
   category: device
+  last_modified: Wed, 27 May 2026 08:02:04 GMT
 ---
 # Connecting, running, and logging Tizen targets
 
@@ -153,4 +154,3 @@ For VS Code, the bundled `flutter-tizen: Attach (project)` configuration perform
 | `dlog` output stops abruptly | TV firmware aggressively rotates the log buffer | Add `-b main -b system` flags, or save to file |
 | `attach --debug-url` fails with `Connection refused` | The app crashed before printing the VM service URL, or printed an `http://...:0/` URL (port not yet allocated) | Restart the app with `--start-paused` and re-grep |
 | Multiple emulators selected ambiguously | Prefix match collision | Pass the full ID (`emulator-26101`, not `emulator`) |
-

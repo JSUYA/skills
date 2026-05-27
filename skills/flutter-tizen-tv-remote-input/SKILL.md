@@ -4,6 +4,7 @@ description: Make a Flutter-Tizen UI navigable with the Samsung TV remote — wi
 metadata:
   target: flutter-tizen
   category: tv-ui
+  last_modified: Wed, 27 May 2026 08:02:04 GMT
 ---
 # Wiring the Samsung TV remote into a Flutter-Tizen app
 
@@ -180,4 +181,3 @@ Watch for the matching `LogicalKeyboardKey.*` value in `flutter-tizen logs` / `s
 - **Swallowing system keys.** Returning `KeyEventResult.handled` for `audioVolume*` or `power` keys prevents the TV from running its own handler and gets your app flagged in store review.
 - **Focus lost on `setState`.** Recreating a `FocusableActionDetector` without a stable `Key` resets focus to nowhere. Use a `FocusNode` field or a `ValueKey` on rebuilds.
 - **Dialogs steal focus oddly.** `showDialog` creates its own scope but does not autofocus inside it. Pass `useRootNavigator: false` and add `autofocus: true` to the first dialog button.
-

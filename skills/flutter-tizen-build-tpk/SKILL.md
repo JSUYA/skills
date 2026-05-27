@@ -4,6 +4,7 @@ description: Build, sign, and inspect Tizen TPK packages for Flutter apps with `
 metadata:
   target: flutter-tizen
   category: build
+  last_modified: Wed, 27 May 2026 08:02:04 GMT
 ---
 # Building Tizen TPKs from Flutter apps
 
@@ -18,7 +19,7 @@ build/tizen/tpk/<projectName>-<version>-<arch>.tpk
 Three knobs control the output:
 
 - `--device-profile {common|tv}` — selects which Tizen profile the package targets. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** Older device profiles (`mobile`, `wearable`) are no longer supported by current flutter-tizen — use 3.16.2 or older for Galaxy Watch; phone targets land under `common`. The official `flutter-tizen` `doc/commands.md` only documents `common` and `tv`.
-- `--target-arch {arm|arm64|x86|x64}` — must match the device CPU. Default is `arm`. Emulators are `x86` (TV emulator, historically 32-bit) or `x64` (common 10.x emulator, 64-bit — verify with `sdb shell uname -m`); real TVs and RPi are `arm` or `arm64`.
+- `--target-arch {arm|arm64|x86|x64}` — must match the device CPU. Default is `arm`. Emulators are `x86` (TV emulator, historically 32-bit) or `x64` (common 10.x emulator, 64-bit — verify with `sdb shell uname -m`). `x64` requires `api-version="8.0"` or newer in `tizen/tizen-manifest.xml`; the default generated `6.0` manifest fails. Real TVs and RPi are `arm` or `arm64`.
 - `--debug` / `--profile` / `--release` — Flutter build mode. Defaults to `--release`. Emulators require a JIT-capable build, i.e. `--debug`.
 
 The package is signed using the active `tizen security-profile`. See [flutter-tizen-setup](../flutter-tizen-setup/SKILL.md) before running this skill.
@@ -32,7 +33,7 @@ Match the profile and arch to the target. Mismatches produce installer errors th
 | Samsung TV 2021+ (real) | `tv` | `arm` (32-bit) | Tizen TV signing keys also required for store submission |
 | Tizen TV emulator (TV 9.0 image) | `tv` | `x86` | 32-bit, must build `--debug` (JIT only) |
 | Raspberry Pi 4 (Tizen OS) | `common` | `arm` or `arm64` | Match the installed Tizen image word size |
-| Tizen common emulator (Tizen 10.x) | `common` | `x64` | 64-bit; older images use `x86`. Must build `--debug` |
+| Tizen common emulator (Tizen 10.x) | `common` | `x64` | 64-bit; older images use `x86`. Must build `--debug`; set manifest `api-version` to `8.0`+ |
 
 Find the target's arch with:
 
@@ -115,6 +116,7 @@ unzip -p build/tizen/tpk/*.tpk tizen-manifest.xml | grep -oE 'appid="[^"]+"'
 
 ```sh
 # Emulator (Tizen common 10.x, x64, debug)
+# Requires api-version="8.0" or newer in tizen/tizen-manifest.xml.
 flutter-tizen build tpk --device-profile common --target-arch x64 --debug
 
 # Emulator (Tizen TV 9.0, x86, debug)

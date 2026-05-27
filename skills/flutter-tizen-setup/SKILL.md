@@ -4,6 +4,7 @@ description: Install and verify the flutter-tizen toolchain (Tizen SDK, sdb, cer
 metadata:
   target: flutter-tizen
   category: environment
+  last_modified: Wed, 27 May 2026 08:02:04 GMT
 ---
 # Setting up flutter-tizen
 
@@ -112,4 +113,3 @@ Copy this checklist and tick items as completed:
 | `flutter-tizen` invokes the wrong Flutter SDK | Upstream `flutter` is earlier on `PATH` | Put `flutter-tizen/bin` ahead of any other Flutter on `PATH`, or use absolute paths |
 | Emulator fails to start on Ubuntu 24.04 | Missing legacy SDL runtime | `sudo apt install libsdl1.2debian` |
 | `Currently on an unknown channel` warning from `doctor` | flutter-tizen's bundled Flutter uses a `user-branch` channel | Expected — this warning can be ignored for flutter-tizen |
-

@@ -4,6 +4,7 @@ description: Pick and wire up Tizen-side Flutter plugins (Samsung-maintained `*_
 metadata:
   target: flutter-tizen
   category: plugins
+  last_modified: Wed, 27 May 2026 08:02:04 GMT
 ---
 # Selecting and integrating Tizen Flutter plugins
 
@@ -45,7 +46,7 @@ Catalog of commonly-used Tizen plugins:
 | URL launcher | `url_launcher_tizen` | Endorsed |
 | Send / receive Tizen app-control intent | `tizen_app_control` | Tizen-exclusive |
 | Cross-app messaging (UI ↔ service) | `messageport_tizen` | Tizen-exclusive |
-| Runtime permissions | `permission_handler_tizen` | Unendorsed; list both |
+| Runtime permissions | `permission_handler` + `permission_handler_tizen` | Add both packages; import `permission_handler` |
 | Foreground / background notifications | `flutter_local_notifications_tizen` | Requires `notification` privilege |
 
 (Always verify the latest version on pub.dev — the catalog rotates.)
@@ -159,7 +160,7 @@ A common false-positive: `flutter-tizen pub get` succeeds but the plugin's nativ
 unzip -l build/tizen/tpk/*.tpk | grep -E 'lib/.*\.so'
 ```
 
-The plugin's shared library should appear under `lib/`. If not, `flutter-tizen clean && flutter-tizen build tpk ...`.
+For default `staticLib` plugins, `lib/libflutter_plugins.so` should appear under `lib/`; plugin-specific `.so` files appear only for `sharedLib` plugins. If the expected library is missing, run `flutter-tizen clean && flutter-tizen build tpk ...`.
 
 ## Pitfalls
 
@@ -168,4 +169,3 @@ The plugin's shared library should appear under `lib/`. If not, `flutter-tizen c
 - **Trusting `permission_handler` alone.** Without a manifest privilege the runtime API instantly returns `denied`. Always check both layers.
 - **API-version mismatch.** A plugin built against `api-version="6.0"` won't link on a 5.5 device. Bump the project's manifest `api-version` (and `device-profile`) to match what the plugin requires.
 - **Stale build cache.** When swapping endorsed ↔ unendorsed, `flutter-tizen clean` is mandatory — pub cache and plugin registry are otherwise stale.
-

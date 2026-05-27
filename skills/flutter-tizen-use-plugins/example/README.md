@@ -6,7 +6,7 @@ Add `geolocator` + `geolocator_tizen` and request location at runtime, including
 
 - `pubspec.snippet.yaml` — relevant dependencies block.
 - `tizen-manifest.snippet.xml` — `<privileges>` + `<feature>` block.
-- `request_location.dart` — runtime permission request via `permission_handler_tizen`.
+- `request_location.dart` — runtime permission request via `permission_handler`, backed by `permission_handler_tizen`.
 
 ## Scenario
 

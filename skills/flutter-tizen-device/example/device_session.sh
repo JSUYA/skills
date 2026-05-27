@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Connect to a Tizen device, run the app, and attach a debugger.
+# Connect to a Tizen device, run the app, and print the VM Service URL.
 # Companion to ../SKILL.md.
 
 set -eu
@@ -21,9 +21,9 @@ LOG=$(mktemp)
 flutter-tizen run -d "$DEVICE_ID" --debug 2>&1 | tee "$LOG" &
 FT_PID=$!
 
-# 4) Wait for the VM Service URL, then expose for `flutter-tizen attach`
+# 4) Wait for the VM Service URL, then print it for DevTools/manual attach
 sleep 5
-VM_URL=$(grep -oE 'http://127\.0\.0\.1:[0-9]+/[^/ ]+' "$LOG" | head -1)
+VM_URL=$(grep -oE 'http://127\.0\.0\.1:[0-9]+/[^ ]+' "$LOG" | head -1)
 echo "VM Service URL: $VM_URL"
 
 # 5) Detach cleanly when done

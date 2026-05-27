@@ -67,7 +67,8 @@
        `flutter-tizen` `doc/commands.md`.
     4. **Pick the ABI** with `--target-arch` — `arm` / `arm64` for real
        hardware; `x86` for TV emulator; `x64` for newer common emulator.
-       Confirm with `sdb shell uname -m`.
+       Confirm with `sdb shell uname -m`. `x64` requires
+       `api-version="8.0"` or newer in `tizen/tizen-manifest.xml`.
     5. **Pick the certificate** with `--security-profile <name>` when the
        active profile is wrong.
     6. **Run** `flutter-tizen build tpk` with the chosen flags. The TPK lands
@@ -178,9 +179,9 @@
        `<privileges>` (e.g. `http://tizen.org/privilege/location`,
        `http://tizen.org/privilege/internet`,
        `http://tizen.org/privilege/camera`).
-    5. **Request privacy-related privileges at runtime** using
-       `permission_handler_tizen` for the categories Tizen classifies as
-       privacy-sensitive (location, camera, microphone, contacts).
+    5. **Request privacy-related privileges at runtime** by depending on both
+       `permission_handler` and `permission_handler_tizen`, then importing
+       `package:permission_handler/permission_handler.dart` in Dart.
     6. **Rebuild the TPK.** Manifest changes do not hot-reload — the next
        install must come from a fresh `flutter-tizen build tpk` /
        `flutter-tizen run`.
@@ -207,8 +208,9 @@
        flutter-tizen create --template=plugin \
            --platforms=tizen --tizen-language=cpp my_plugin_tizen
        ```
-       Use `--tizen-language=csharp` only when the underlying API is .NET-
-       only (rare).
+       The C++ scaffold is the reusable default; use
+       `--tizen-language=csharp` only when the host app is C# and the
+       underlying API is .NET-only.
     2. **Find the Tizen Native API** in
        docs.tizen.org/application/native/api/<profile>/<version>/group/.
        Note the privileges and the `pkg-config` module the API belongs to
@@ -220,13 +222,15 @@
     4. **Link the Native module** in `tizen/project_def.prop`:
        ```
        APPNAME = my_plugin_tizen
-       type = sharedLib
+       type = staticLib
        USER_LIB_DIRS =
        USER_INC_DIRS = inc src
        USER_SRCS = src/my_plugin_tizen_plugin.cc
-       USER_LIBS = capi-system-info
        USER_PKGS = capi-system-info
+       USER_LIBS =
        ```
+       `capi-*` names are pkg-config modules and belong in `USER_PKGS`; use
+       `USER_LIBS` only for plain libraries that do not have pkg-config files.
     5. **Declare privileges and features in `tizen-manifest.xml`** (under
        `example/tizen/` for the example app). Include both `<privilege>`
        and any `<feature>` requirements (e.g.
@@ -246,4 +250,3 @@
     - https://github.com/flutter-tizen/plugins
     - https://docs.tizen.org/application/native/api/wearable/latest/index.html
     - https://docs.flutter.dev/packages-and-plugins/developing-packages
-

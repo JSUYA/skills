@@ -2,7 +2,7 @@
 // Runtime location permission with three explicit outcomes.
 
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler_tizen/permission_handler_tizen.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Returns the user's position or `null` if permission is denied.
 Future<Position?> readPosition() async {

@@ -1,7 +1,7 @@
 <!--
   Privileges and features for an app consuming `foo_tizen`.
   The host app's tizen-manifest.xml is what the OS evaluates at install
-  and runtime — the plugin's own manifest is metadata.
+  and runtime — plugin-level snippets are documentation for consumers.
 -->
 <privileges>
   <!-- app_get_data_path itself needs no privilege; this block exists to

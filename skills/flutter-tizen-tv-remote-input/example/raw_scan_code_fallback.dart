@@ -7,6 +7,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'remote_button.dart';
+
 class RawScanCodeOverride extends StatelessWidget {
   const RawScanCodeOverride({super.key, required this.child});
   final Widget child;
@@ -35,7 +37,7 @@ class RawScanCodeOverride extends StatelessWidget {
   }
 
   void _dispatchRed(BuildContext context) {
-    Actions.maybeInvoke<DismissIntent>(context, const DismissIntent());
+    Actions.maybeInvoke<RedKeyIntent>(context, const RedKeyIntent());
   }
 
   void _dispatchPlayPause(BuildContext context) {

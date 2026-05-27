@@ -23,10 +23,11 @@ class RemoteButton extends StatelessWidget {
     return FocusableActionDetector(
       autofocus: autofocus,
       shortcuts: <ShortcutActivator, Intent>{
-        const SingleActivator(LogicalKeyboardKey.select): const ActivateIntent(),
+        const SingleActivator(LogicalKeyboardKey.select):
+            const ActivateIntent(),
         const SingleActivator(LogicalKeyboardKey.enter): const ActivateIntent(),
         const SingleActivator(LogicalKeyboardKey.escape): const DismissIntent(),
-        const SingleActivator(LogicalKeyboardKey.colorF0Red): _RedKeyIntent(),
+        const SingleActivator(LogicalKeyboardKey.colorF0Red): RedKeyIntent(),
       },
       actions: <Type, Action<Intent>>{
         ActivateIntent: CallbackAction<ActivateIntent>(
@@ -35,7 +36,7 @@ class RemoteButton extends StatelessWidget {
         DismissIntent: CallbackAction<DismissIntent>(
           onInvoke: (_) => Navigator.maybePop(context),
         ),
-        _RedKeyIntent: CallbackAction<_RedKeyIntent>(
+        RedKeyIntent: CallbackAction<RedKeyIntent>(
           onInvoke: (_) => onRedKey?.call(),
         ),
       },
@@ -45,7 +46,13 @@ class RemoteButton extends StatelessWidget {
           return AnimatedContainer(
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            transform: Matrix4.identity()..scale(focused ? 1.04 : 1.0),
+            transform: Matrix4.identity()
+              ..scaleByDouble(
+                focused ? 1.04 : 1.0,
+                focused ? 1.04 : 1.0,
+                1.0,
+                1.0,
+              ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               color: const Color(0xFF1E1E1E),
@@ -65,6 +72,6 @@ class RemoteButton extends StatelessWidget {
   }
 }
 
-class _RedKeyIntent extends Intent {
-  const _RedKeyIntent();
+class RedKeyIntent extends Intent {
+  const RedKeyIntent();
 }
