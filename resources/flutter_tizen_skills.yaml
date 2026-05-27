@@ -16,6 +16,7 @@
   description: Install and verify the flutter-tizen toolchain (Tizen SDK, sdb,
     certificate profile, flutter-tizen CLI). Use when bootstrapping a new
     development host, when `flutter-tizen doctor` reports missing components,
+    when `sdb` or `tizen` CLI is not found or a certificate profile is missing,
     or before a clean-room device build.
   examplePrompt: "Set up flutter-tizen on a fresh Ubuntu 24.04 host and confirm doctor is green"
   instructions: |
@@ -49,7 +50,8 @@
   description: Build, sign, and inspect Tizen TPK packages for Flutter apps
     with `flutter-tizen build tpk`. Use when producing a deployable artifact
     for a specific device profile (`common` or `tv`), when troubleshooting
-    signing failures, or when controlling ABI / build mode for emulator vs.
+    signing failures, when a TPK install fails with signing or architecture
+    mismatch errors, or when controlling ABI / build mode for emulator vs.
     real device.
   examplePrompt: "Build a signed release TPK for Samsung TV 2022"
   instructions: |
@@ -83,8 +85,9 @@
 - name: flutter-tizen-device
   description: Connect to and run Flutter apps on Tizen devices and emulators
     using `sdb`, `flutter-tizen run`, and `sdb dlog`. Use when bringing up a
-    TV / RPi / emulator target, when filtering noisy device logs, or when
-    attaching a debugger to a running app.
+    TV / RPi / emulator target, when `sdb devices` shows offline or
+    unauthorized, when filtering noisy device logs, or when attaching a
+    debugger to a running app.
   examplePrompt: "Connect my TV at 192.168.0.101 and tail Flutter console + engine logs only"
   instructions: |
     1. **Enable Developer Mode on the device.** TV: Apps → enter `12345`,
@@ -193,8 +196,10 @@
   description: Scaffold a new Tizen-side Flutter plugin (C++ or C#), wire it
     to Dart through a method channel, declare the right privileges in
     `tizen-manifest.xml`, and validate it against a device or emulator. Use
-    when no existing Tizen plugin wraps a needed Tizen Native API, or when
-    extending a cross-platform plugin with a `_tizen` implementation.
+    when creating a new Flutter plugin for Tizen, when no existing Tizen plugin
+    wraps a needed Tizen Native API, when a plugin's C++ build fails with link
+    errors, or when extending a cross-platform plugin with a `_tizen`
+    implementation.
   examplePrompt: "Wrap the Tizen system_info API as a new system_info_tizen plugin"
   instructions: |
     1. **Scaffold the package.**

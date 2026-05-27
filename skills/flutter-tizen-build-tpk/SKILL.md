@@ -1,21 +1,11 @@
 ---
 name: flutter-tizen-build-tpk
-description: Build, sign, and inspect Tizen TPK packages for Flutter apps with `flutter-tizen build tpk`. Use when producing a deployable artifact for a specific device profile (`common` or `tv`), when troubleshooting signing failures, or when controlling ABI / build mode for emulator vs. real device.
+description: Build, sign, and inspect Tizen TPK packages for Flutter apps with `flutter-tizen build tpk`. Use when producing a deployable artifact for a specific device profile (`common` or `tv`), when troubleshooting signing failures, when a TPK install fails with signing or architecture mismatch errors, or when controlling ABI / build mode for emulator vs. real device.
 metadata:
   target: flutter-tizen
   category: build
 ---
 # Building Tizen TPKs from Flutter apps
-
-## Contents
-- [Background](#background)
-- [Choosing a device profile and ABI](#choosing-a-device-profile-and-abi)
-- [Build modes](#build-modes)
-- [Signing](#signing)
-- [Workflow: Produce a Signed TPK](#workflow-produce-a-signed-tpk)
-- [Inspecting the output](#inspecting-the-output)
-- [Common failures](#common-failures)
-- [Examples](#examples)
 
 ## Background
 
@@ -122,8 +112,6 @@ unzip -p build/tizen/tpk/*.tpk tizen-manifest.xml | grep -oE 'appid="[^"]+"'
 | App installs but appid disappears | `tizen-manifest.xml` declares an api-version newer than the device firmware | Lower `api-version` in `tizen/tizen-manifest.xml` to one supported by the device |
 
 ## Examples
-
-Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.
 
 ```sh
 # Emulator (Tizen common 10.x, x64, debug)

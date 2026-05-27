@@ -1,21 +1,11 @@
 ---
 name: flutter-tizen-device
-description: Connect to and run Flutter apps on Tizen devices and emulators using `sdb`, `flutter-tizen run`, and `sdb dlog`. Use when bringing up a TV / RPi / emulator target, when filtering noisy device logs, or when attaching a debugger to a running app.
+description: Connect to and run Flutter apps on Tizen devices and emulators using `sdb`, `flutter-tizen run`, and `sdb dlog`. Use when bringing up a TV / RPi / emulator target, when `sdb devices` shows offline or unauthorized, when filtering noisy device logs, or when attaching a debugger to a running app.
 metadata:
   target: flutter-tizen
   category: device
 ---
 # Connecting, running, and logging Tizen targets
-
-## Contents
-- [Concepts](#concepts)
-- [Connecting a device](#connecting-a-device)
-- [Selecting the active device](#selecting-the-active-device)
-- [Running an app](#running-an-app)
-- [Reading device logs (dlog)](#reading-device-logs-dlog)
-- [Attaching a debugger](#attaching-a-debugger)
-- [Workflow: Bring Up a Target and Tail Logs](#workflow-bring-up-a-target-and-tail-logs)
-- [Common failures](#common-failures)
 
 ## Concepts
 
@@ -164,6 +154,3 @@ For VS Code, the bundled `flutter-tizen: Attach (project)` configuration perform
 | `attach --debug-url` fails with `Connection refused` | The app crashed before printing the VM service URL, or printed an `http://...:0/` URL (port not yet allocated) | Restart the app with `--start-paused` and re-grep |
 | Multiple emulators selected ambiguously | Prefix match collision | Pass the full ID (`emulator-26101`, not `emulator`) |
 
-## Example
-
-Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

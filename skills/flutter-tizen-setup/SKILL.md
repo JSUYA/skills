@@ -1,20 +1,11 @@
 ---
 name: flutter-tizen-setup
-description: Install and verify the flutter-tizen toolchain (Tizen SDK, sdb, certificate profile, flutter-tizen CLI). Use when bootstrapping a new development host, when `flutter-tizen doctor` reports missing components, or before a clean-room device build.
+description: Install and verify the flutter-tizen toolchain (Tizen SDK, sdb, certificate profile, flutter-tizen CLI). Use when bootstrapping a new development host, when `flutter-tizen doctor` reports missing components, when `sdb` or `tizen` CLI is not found or a certificate profile is missing, or before a clean-room device build.
 metadata:
   target: flutter-tizen
   category: environment
 ---
 # Setting up flutter-tizen
-
-## Contents
-- [Prerequisites](#prerequisites)
-- [Install the Tizen SDK](#install-the-tizen-sdk)
-- [Install flutter-tizen](#install-flutter-tizen)
-- [Create a certificate profile](#create-a-certificate-profile)
-- [Verify the toolchain](#verify-the-toolchain)
-- [Workflow: First-Time Setup](#workflow-first-time-setup)
-- [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
@@ -122,6 +113,3 @@ Copy this checklist and tick items as completed:
 | Emulator fails to start on Ubuntu 24.04 | Missing legacy SDL runtime | `sudo apt install libsdl1.2debian` |
 | `Currently on an unknown channel` warning from `doctor` | flutter-tizen's bundled Flutter uses a `user-branch` channel | Expected — this warning can be ignored for flutter-tizen |
 
-## Example
-
-Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.

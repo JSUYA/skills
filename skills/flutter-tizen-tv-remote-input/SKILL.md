@@ -7,16 +7,6 @@ metadata:
 ---
 # Wiring the Samsung TV remote into a Flutter-Tizen app
 
-## Contents
-- [Why this is different from mobile](#why-this-is-different-from-mobile)
-- [Tizen TV remote key codes](#tizen-tv-remote-key-codes)
-- [Architecture: Focus, Shortcuts, Actions](#architecture-focus-shortcuts-actions)
-- [Building a focusable widget](#building-a-focusable-widget)
-- [Custom focus traversal](#custom-focus-traversal)
-- [Workflow: Make a Screen Remote-Navigable](#workflow-make-a-screen-remote-navigable)
-- [Verifying on a TV / emulator](#verifying-on-a-tv--emulator)
-- [Pitfalls](#pitfalls)
-
 ## Why this is different from mobile
 
 A Tizen TV has no touch surface; every interaction is a key event. Flutter's gesture-based widgets (`InkWell`, `GestureDetector` with only `onTap`) do not react to the OK button unless you explicitly route key events into them via `Focus` and `Shortcuts`/`Actions`.
@@ -191,6 +181,3 @@ Watch for the matching `LogicalKeyboardKey.*` value in `flutter-tizen logs` / `s
 - **Focus lost on `setState`.** Recreating a `FocusableActionDetector` without a stable `Key` resets focus to nowhere. Use a `FocusNode` field or a `ValueKey` on rebuilds.
 - **Dialogs steal focus oddly.** `showDialog` creates its own scope but does not autofocus inside it. Pass `useRootNavigator: false` and add `autofocus: true` to the first dialog button.
 
-## Example
-
-Runnable companion sources live in [`example/README.md`](example/README.md) — open `example/README.md` for the scenario list.
