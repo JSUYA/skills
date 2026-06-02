@@ -67,7 +67,7 @@ Copy this checklist:
 
 ### Task Progress
 - [ ] **Step 1: Confirm toolchain.** `flutter-tizen doctor -v` clean; `tizen security-profiles list` shows a profile.
-- [ ] **Step 2: Identify the target.** Capture `device-profile` and `target-arch` from `sdb capability` / `uname -m`.
+- [ ] **Step 2: Identify the target.** Capture `device-profile` and `target-arch` from `sdb -s <id> capability`.
 - [ ] **Step 3: Pick build mode.** `--debug` for emulators; `--release` for store / hardware; `--profile` for benchmarks.
 - [ ] **Step 4: Run the build.**
    ```sh
