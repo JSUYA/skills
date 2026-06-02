@@ -77,7 +77,7 @@ While the app runs, keypresses in the terminal are forwarded:
 
 ## Reading app logs
 
-> **Do not use `sdb dlog` / `sdb shell` on Tizen TV targets — they don't work.** TV emulators and real TVs ship a locked-down `sdb` (verified on `T-samsung-10.0-x86_64`: `sdb capability` shows `secure_protocol:enabled` + `intershell_support:disabled`), so `sdb dlog` returns nothing and `sdb shell` is closed — silently, with no error. Read app output from the **foreground `flutter-tizen run` session** instead.
+> **Tizen TV targets ship a locked-down `sdb`** — verified on `T-samsung-10.0-x86_64`: `sdb capability` shows `secure_protocol:enabled` + `intershell_support:disabled`, so log/shell access over `sdb` is unavailable (silently, with no error). Read app output from the **foreground `flutter-tizen run` session** instead.
 
 `flutter-tizen run` streams Dart `print`/`debugPrint` and Flutter engine messages in the terminal it runs in:
 
@@ -98,7 +98,7 @@ For an app that is already running on the device, attach with its VM Service URL
 flutter-tizen -d <id> attach --debug-url http://127.0.0.1:<port>/<token>=/
 ```
 
-The trailing `=/` is part of the URL — keep it. The URL comes from the app's own `flutter-tizen run` session; on TV targets you cannot grep it from `sdb dlog`, so launch the app with `flutter-tizen run` (which prints it directly) rather than from its icon.
+The trailing `=/` is part of the URL — keep it. The URL comes from the app's own `flutter-tizen run` session, so launch the app with `flutter-tizen run` (which prints it directly) rather than from its icon.
 
 For VS Code, the bundled `flutter-tizen: Attach (project)` configuration automates this.
 
@@ -109,7 +109,7 @@ For VS Code, the bundled `flutter-tizen: Attach (project)` configuration automat
 - [ ] **Step 2: Select the device.** Capture the exact `device-id` and use it as `-d <id>` for every subsequent command.
 - [ ] **Step 3: Build + run.** `flutter-tizen -d <id> run` (or `--profile` / `--release`). Logs stream in this terminal.
 - [ ] **Step 4: Reproduce the issue / exercise the feature.** Watch the `run` console; use `r` for hot reload as needed. To keep a copy, re-run with `2>&1 | tee app.log`.
-- [ ] **Step 5: If debugging an externally-launched app**, attach with `flutter-tizen -d <id> attach --debug-url <url>` (start it via `flutter-tizen run` so the URL is printed — it cannot be grepped from `sdb dlog` on TV).
+- [ ] **Step 5: If debugging an externally-launched app**, attach with `flutter-tizen -d <id> attach --debug-url <url>` (start it via `flutter-tizen run` so the URL is printed).
 - [ ] **Step 6: Detach cleanly** with `q` or `Ctrl-C`.
 
 ## Common failures

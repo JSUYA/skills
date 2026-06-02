@@ -146,7 +146,7 @@ This call **does not work** without the matching `<privilege>` line in `tizen-ma
 
 ## Verifying the plugin works
 
-> `sdb dlog` / `sdb shell` do not work on Tizen TV targets (verified: `sdb capability` shows `secure_protocol:enabled`). Verify from the **foreground `flutter-tizen run` console** instead.
+> On Tizen TV targets `sdb` is locked down (verified: `sdb capability` shows `secure_protocol:enabled`), so verify from the **foreground `flutter-tizen run` console**.
 
 Plugin registration and Dart-side `print`/`debugPrint` appear directly in the `run` console. Surface native failures to the Dart side so they show there too:
 
@@ -159,7 +159,7 @@ try {
 }
 ```
 
-(A plugin's native `ERR_*` macros log to dlog, which is unavailable on TV — catch the call on the Dart side as above to see the failure in the `run` console.)
+(Catch the call on the Dart side as above so native `ERR_*` failures surface in the `run` console.)
 
 A common false-positive: `flutter-tizen pub get` succeeds but the plugin's native code is missing from the TPK. Confirm with:
 

@@ -128,7 +128,7 @@ Snap-back patterns (focus must stop at the last item in a row, not wrap) are imp
 
 ## Verifying on a TV / emulator
 
-> **`sdb shell` does not work on the Samsung TV emulator — so no sdb-based key injection or log reading works there.** Verified on `T-samsung-10.0-x86_64` (Tizen 10.0): `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so `sdb shell …` (incl. `input_keyevent`), `sdb dlog …`, and `sdb root on` all fail silently (empty output / `closed` / `Permission denied`). Confirm on any target with:
+> **`sdb shell` does not work on the Samsung TV emulator — so no sdb-based key injection or log reading works there.** Verified on `T-samsung-10.0-x86_64` (Tizen 10.0): `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so `sdb shell …` (incl. `input_keyevent`) and `sdb root on` fail silently (empty output / `closed` / `Permission denied`). Confirm on any target with:
 >
 > ```sh
 > sdb -s <id> capability | grep -E 'intershell_support|secure_protocol'
@@ -145,7 +145,7 @@ There is **no sdb key-injection path on the TV emulator**. Send keys through eit
 
 ### Watching key events
 
-There is **no `flutter-tizen logs` command**, and `sdb dlog` returns nothing on the TV emulator. Read Dart/engine output from the foreground `flutter-tizen run` session (or `flutter-tizen attach` to a running app) — that is the only log channel that works on the TV emulator.
+There is **no `flutter-tizen logs` command**. Read Dart/engine output from the foreground `flutter-tizen run` session (or `flutter-tizen attach` to a running app) — that is the log channel that works on the TV emulator.
 
 For sanity-checking from inside Flutter, drop a temporary listener:
 
