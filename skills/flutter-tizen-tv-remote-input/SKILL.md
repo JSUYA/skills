@@ -141,7 +141,7 @@ There is **no sdb key-injection path on the TV emulator**. Send keys through eit
 - the **emulator's on-screen control panel** (its remote / key window), or
 - a **paired host keyboard** — arrow keys = D-pad, Enter = OK, Backspace/Esc = Back.
 
-> `sdb shell input_keyevent <X11-keysym>` (e.g. `Right`, `Return`, `XF86Back`) exists, but only on the **common** (non-TV) Tizen emulator, where `intershell_support:enabled`. It does **not** reach the TV emulator — do not use it for TV verification.
+> `sdb shell input_keyevent <X11-keysym>` (e.g. `Right`, `Return`, `XF86Back`) is present only on the **common** (non-TV) emulator (`intershell_support:enabled`) and is absent on the TV emulator. **But even on the common emulator it does not drive the Flutter app** — verified: with the Flutter window focused (`enlightenment_info -topvwins` shows `Foc:O`), `input_keyevent Right/Return` returns `rc=0` yet **zero** `KeyDownEvent`s reach the app (a `HardwareKeyboard.instance.addHandler` logger recorded nothing across ~10 injections). `input_keyevent` (enlightenment_input_key) injects at a layer the Tizen Flutter embedder's input path (ecore_wl2 / libinput) does not observe. **Do not rely on `input_keyevent` for Flutter key verification on any emulator** — use the emulator's on-screen control panel, a paired host keyboard, or the run console instead.
 
 ### Watching key events
 

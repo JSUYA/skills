@@ -69,9 +69,12 @@ While the app runs, keypresses in the terminal are forwarded:
 
 - `r` — hot reload
 - `R` — hot restart
-- `p` — toggle `debugPaintSizeEnabled` overlay
-- `o` — toggle platform (only useful for non-Tizen platforms)
+- `h` — list **all** interactive commands (the full set below is hidden until you press `h`)
+- `d` — detach (leave the app running, stop `flutter-tizen run`)
+- `c` — clear the screen
 - `q` — quit and detach
+
+The default key menu printed by `flutter-tizen run` is exactly `r R h d c q` (verified). Less-common keys such as `p` (toggle `debugPaintSizeEnabled`) and `o` (toggle platform) are only listed after pressing `h`.
 
 `flutter-tizen run` is the only flutter-tizen command that builds *and* installs *and* launches; for already-installed apps see [Attaching a debugger](#attaching-a-debugger).
 

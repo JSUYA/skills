@@ -12,8 +12,8 @@ metadata:
 
 Three layouts you will encounter:
 
-1. **Endorsed federated plugin.** The base plugin (e.g. `shared_preferences`) lists `shared_preferences_tizen` as an explicit dep. Adding only the base plugin pulls in Tizen support automatically.
-2. **Unendorsed federated plugin.** The base plugin does not know about Tizen. You must list both `shared_preferences` *and* `shared_preferences_tizen` in `pubspec.yaml` for Tizen builds to use the Tizen implementation.
+1. **Endorsed federated plugin.** The base plugin lists its `*_tizen` sibling as an explicit dep, so adding only the base plugin pulls in Tizen support automatically. **In practice this is rare** — upstream first-party plugins (Google's `shared_preferences`, `url_launcher`, …) do **not** list a Tizen implementation, so they are *not* endorsed. Verified: `flutter-tizen pub add shared_preferences` (and `url_launcher`) prints `<plugin>_tizen is available on pub.dev. Did you forget to add to pubspec.yaml?` and does **not** pull the Tizen package. Assume unendorsed unless you confirm otherwise.
+2. **Unendorsed federated plugin** (the common case). The base plugin does not know about Tizen. You must list both the base *and* the `*_tizen` sibling in `pubspec.yaml` for Tizen builds to use the Tizen implementation — e.g. `shared_preferences` **and** `shared_preferences_tizen`.
 3. **Tizen-exclusive plugin.** Single package, no cross-platform parent (`tizen_app_control`, `messageport_tizen`, `tizen_package_manager`, `tizen_log`, `audio_session_tizen`, `app_settings_tizen`, …). Use directly.
 
 Samsung publishes maintained packages under https://github.com/flutter-tizen/plugins. Treat this repo as the source of truth for whether a Tizen variant exists.
@@ -36,14 +36,14 @@ Catalog of commonly-used Tizen plugins:
 
 | Need | Plugin | Notes |
 |---|---|---|
-| Local key-value storage | `shared_preferences_tizen` | Endorsed |
+| Local key-value storage | `shared_preferences_tizen` | Unendorsed — list both packages (verified); Dart/FFI, no native `.so` in TPK |
 | File system paths | `path_provider_tizen` | Dart-FFI based, no native code |
 | HTTP fetch (no plugin needed) | `package:http` | Works out of the box on Tizen |
 | WebView | `webview_flutter_tizen` | Backed by Tizen EWK |
 | Connectivity status | `connectivity_plus_tizen` | Unendorsed; list both packages |
 | Battery info | `battery_plus_tizen` | Unendorsed |
 | Vibration | `vibration_tizen` | Requires `haptic` privilege |
-| URL launcher | `url_launcher_tizen` | Endorsed |
+| URL launcher | `url_launcher_tizen` | Unendorsed — list both packages (verified) |
 | Send / receive Tizen app-control intent | `tizen_app_control` | Tizen-exclusive |
 | Cross-app messaging (UI ↔ service) | `messageport_tizen` | Tizen-exclusive |
 | Runtime permissions | `permission_handler` + `permission_handler_tizen` | Add both packages; import `permission_handler` |
@@ -167,7 +167,9 @@ A common false-positive: `flutter-tizen pub get` succeeds but the plugin's nativ
 unzip -l build/tizen/tpk/*.tpk | grep -E 'lib/.*\.so'
 ```
 
-For default `staticLib` plugins, `lib/libflutter_plugins.so` should appear under `lib/`; plugin-specific `.so` files appear only for `sharedLib` plugins. If the expected library is missing, run `flutter-tizen clean && flutter-tizen build tpk ...`.
+For plugins with **C++ native code** (`staticLib`), `lib/libflutter_plugins.so` should appear under `lib/`; plugin-specific `.so` files appear only for `sharedLib` plugins. If the expected library is missing, run `flutter-tizen clean && flutter-tizen build tpk ...`.
+
+**Exception — Dart/FFI plugins have no native `.so` at all.** Plugins declared with `dartPluginClass` + `ffi` (e.g. `shared_preferences_tizen`, `path_provider_tizen`) ship no C++ library, so the TPK contains only `lib/libflutter_engine.so` and `lib/libflutter_tizen.so` — no `libflutter_plugins.so`. That is **correct**, not a packaging failure (verified). Confirm such a plugin works by exercising it at runtime and watching the `run` console, not by grepping for a `.so`.
 
 ## Pitfalls
 

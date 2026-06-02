@@ -13,12 +13,12 @@ metadata:
 `flutter-tizen build tpk` compiles the Flutter app, links it against the Tizen embedder, and packs the result as a `.tpk`. Output lands at:
 
 ```
-build/tizen/tpk/<projectName>-<version>-<arch>.tpk
+build/tizen/tpk/<packageId>-<version>.tpk
 ```
 
 Three knobs control the output:
 
-- `--device-profile {common|tv}` — selects which Tizen profile the package targets. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** Older device profiles (`mobile`, `wearable`) are no longer supported by current flutter-tizen — use 3.16.2 or older for Galaxy Watch; phone targets land under `common`. The official `flutter-tizen` `doc/commands.md` only documents `common` and `tv`.
+- `--device-profile {common|tv}` — selects which Tizen profile the package targets. **Default is `tv`** (verified via `flutter-tizen build tpk --help`), so always pass `--device-profile` explicitly rather than relying on the default. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** The official `flutter-tizen` `doc/commands.md` documents only `common` and `tv`; phone targets land under `common`. Legacy `mobile` / `wearable` profiles are gone — use flutter-tizen 3.16.2 or older for Galaxy Watch.
 - `--target-arch {arm|arm64|x86|x64}` — must match the device CPU. Default is `arm`. Current emulators are 64-bit `x64`: the Tizen 10.0 TV emulator (verified `cpu_arch:x86_64` on `T-samsung-10.0-x86_64`) and the common 10.x emulator are both `x64`; only older TV images (9.0 and earlier) are 32-bit `x86`. Verify with `sdb -s <id> capability | grep cpu_arch` — **not** `sdb shell uname -m`, which the secured TV emulator blocks (`intershell_support:disabled`, returns nothing). `x64` requires `api-version="8.0"` or newer in `tizen/tizen-manifest.xml`; the default generated `6.0` manifest fails. Real TVs and RPi are `arm` or `arm64`.
 - `--debug` / `--profile` / `--release` — Flutter build mode. Defaults to `--release`. Emulators require a JIT-capable build, i.e. `--debug`.
 

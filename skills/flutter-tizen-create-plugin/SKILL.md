@@ -49,6 +49,7 @@ This produces:
 foo_tizen/
 ├── lib/
 │   ├── foo_tizen.dart                       # Dart-facing API
+│   ├── foo_tizen_platform_interface.dart    # platform-interface base
 │   └── foo_tizen_method_channel.dart        # MethodChannel wiring
 ├── tizen/
 │   ├── inc/foo_tizen_plugin.h
@@ -60,7 +61,7 @@ foo_tizen/
 └── pubspec.yaml
 ```
 
-When prompted, update `pubspec.yaml` to declare the Tizen plugin class:
+The scaffold already populates `pubspec.yaml` with the Tizen plugin class (auto-filled, not prompted — verified). Confirm it reads:
 
 ```yaml
 flutter:
@@ -139,22 +140,25 @@ void FooTizenPluginRegisterWithRegistrar(
 }
 ```
 
-If the Tizen API needs link-time libraries, edit `tizen/project_def.prop`. There are two fields to keep straight:
+If the Tizen API needs link-time libraries, edit `tizen/project_def.prop`. The generated scaffold ships **only** these lines (verified on a fresh `flutter-tizen create --template plugin`):
 
 ```
-# Source files (already present)
+type = staticLib
 USER_SRCS += src/*.cc
+USER_INC_DIRS = inc src
+```
 
+`USER_PKGS` and `USER_LIBS` are **not** present by default — you add them. There are two fields to keep straight:
+
+```
 # Tizen Native pkg-config module names — resolves both include dirs and
-# link libraries via pkg-config. Use this for capi-* / dlog / vconf / ...
+# link libraries via pkg-config. ADD this line for capi-* / dlog / vconf / ...
 USER_PKGS = capi-appfw-app-common capi-system-info
 
-# Plain link libraries (no -l prefix, no pkg-config). Use this for
+# Plain link libraries (no -l prefix, no pkg-config). ADD this for
 # system libs like pthread or for sharedLib plugins that link the
 # Flutter embedder directly.
 USER_LIBS =
-
-USER_INC_DIRS = inc src
 ```
 
 Two pitfalls here:
