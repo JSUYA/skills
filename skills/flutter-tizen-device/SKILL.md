@@ -1,6 +1,6 @@
 ---
 name: flutter-tizen-device
-description: Connect to and run Flutter apps on Tizen devices and emulators using `sdb`, `flutter-tizen run`, and `sdb dlog`. Use when bringing up a TV / RPi / emulator target, when `sdb devices` shows offline or unauthorized, when filtering noisy device logs, or when attaching a debugger to a running app.
+description: Connect to and run Flutter apps on Tizen devices and emulators using `sdb` and `flutter-tizen run`. Use when bringing up a TV / RPi / emulator target, when `sdb devices` shows offline or unauthorized, when reading app logs, or when attaching a debugger to a running app.
 metadata:
   target: flutter-tizen
   category: device
@@ -75,80 +75,42 @@ While the app runs, keypresses in the terminal are forwarded:
 
 `flutter-tizen run` is the only flutter-tizen command that builds *and* installs *and* launches; for already-installed apps see [Attaching a debugger](#attaching-a-debugger).
 
-## Reading device logs (dlog)
+## Reading app logs
 
-Tizen's logging system is `dlog`, surfaced via `sdb dlog`. By default it dumps every tag on every priority — useless. Always filter.
+> **Do not use `sdb dlog` / `sdb shell` on Tizen TV targets — they don't work.** TV emulators and real TVs ship a locked-down `sdb` (verified on `T-samsung-10.0-x86_64`: `sdb capability` shows `secure_protocol:enabled` + `intershell_support:disabled`), so `sdb dlog` returns nothing and `sdb shell` is closed — silently, with no error. Read app output from the **foreground `flutter-tizen run` session** instead.
 
-> **The Samsung TV emulator blocks `sdb dlog` and `sdb shell`.** Verified on `T-samsung-10.0-x86_64`: its `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so every `sdb dlog …` returns 0 lines and every `sdb shell …` (incl. `pgrep`) returns nothing — silently, with no error. On that target, read logs from the **foreground `flutter-tizen run` console** instead (it streams over the Dart VM service, not dlog). `sdb dlog`/`sdb shell` are available only where `sdb capability` shows `intershell_support:enabled` — verified on the **common** emulator. Check the target first:
->
-> ```sh
-> sdb -s <id> capability | grep -E 'intershell_support|secure_protocol'
-> ```
-
-### Filter by tag
+`flutter-tizen run` streams Dart `print`/`debugPrint` and Flutter engine messages in the terminal it runs in:
 
 ```sh
-# Console output from the Flutter app
-sdb -s <id> dlog ConsoleMessage:D *:S
-
-# Flutter engine internals
-sdb -s <id> dlog FlutterEngine:V *:S
-
-# Most-useful default for Flutter apps (console + engine + your own native tag)
-sdb -s <id> dlog ConsoleMessage:V FlutterEngine:I MyPlugin:V *:S
+flutter-tizen -d <id> run                    # logs stream live in this terminal
+flutter-tizen -d <id> run 2>&1 | tee app.log # also capture to a file
 ```
 
-The `<tag>:<priority>` syntax mirrors logcat: `V`erbose, `D`ebug, `I`nfo, `W`arn, `E`rror, `F`atal, `S`ilent. `*:S` silences every tag not explicitly listed.
-
-### Filter by process / appid
-
-```sh
-# Print only lines from a specific PID
-sdb -s <id> shell pgrep -af <your-app-binary>
-sdb -s <id> dlog --pid <pid>
-
-# Clear the ring buffer before reproducing a bug
-sdb -s <id> dlog -c
-```
-
-### Saving logs
-
-```sh
-sdb -s <id> dlog ConsoleMessage:V *:S > app.log
-sdb -s <id> dlog -d > snapshot.log    # dump and exit
-```
+The same session prints the Dart VM Service URL (for DevTools) and accepts the hot-reload keys below.
 
 ## Attaching a debugger
 
-Direct `flutter-tizen run` already attaches the Dart VM service — and is the **only** option on the secured TV emulator, where the dlog-grep step below returns nothing (see the dlog caveat above). For an app that is already running (e.g. launched by tapping its icon) on a dlog-capable target, attach manually:
+`flutter-tizen run` builds, installs, launches, **and** attaches the Dart VM service in one step — prefer it. It streams logs and prints the VM Service URL in the foreground.
 
-1. Start the app on the device.
-2. Tail dlog for the VM Service URL:
-   ```sh
-   sdb -s <id> dlog ConsoleMessage:V *:S | grep -i 'observatory\|vm service\|dart vm'
-   ```
-   Look for a line like `The Dart VM service is listening on http://127.0.0.1:<port>/...`.
-3. Attach:
-   ```sh
-   flutter-tizen -d <id> attach --debug-url http://127.0.0.1:<port>/<token>=/
-   ```
-   The trailing `=/` is part of the URL — keep it.
+For an app that is already running on the device, attach with its VM Service URL:
 
-For VS Code, the bundled `flutter-tizen: Attach (project)` configuration performs steps 2-3 automatically.
+```sh
+flutter-tizen -d <id> attach --debug-url http://127.0.0.1:<port>/<token>=/
+```
 
-## Workflow: Bring Up a Target and Tail Logs
+The trailing `=/` is part of the URL — keep it. The URL comes from the app's own `flutter-tizen run` session; on TV targets you cannot grep it from `sdb dlog`, so launch the app with `flutter-tizen run` (which prints it directly) rather than from its icon.
+
+For VS Code, the bundled `flutter-tizen: Attach (project)` configuration automates this.
+
+## Workflow: Bring Up a Target and Read Logs
 
 ### Task Progress
 - [ ] **Step 1: Confirm connectivity.** `sdb devices` shows the target as `device` (not `offline`).
 - [ ] **Step 2: Select the device.** Capture the exact `device-id` and use it as `-d <id>` for every subsequent command.
-- [ ] **Step 3: Build + run.** `flutter-tizen -d <id> run` (or `--profile` / `--release`).
-- [ ] **Step 4: Clear and tail logs in a second shell.** (Skip on the secured TV emulator — dlog is blocked there; use the foreground `flutter-tizen run` console instead.)
-   ```sh
-   sdb -s <id> dlog -c && sdb -s <id> dlog ConsoleMessage:V FlutterEngine:I *:S
-   ```
-- [ ] **Step 5: Reproduce the issue / exercise the feature.** Use `r` for hot reload as needed.
-- [ ] **Step 6: If debugging an externally-launched app**, grep dlog for the VM service URL and `flutter-tizen attach --debug-url=...`.
-- [ ] **Step 7: Detach cleanly** with `q` or `Ctrl-C`. Re-running without `q` leaves zombie sdb shell pipes.
+- [ ] **Step 3: Build + run.** `flutter-tizen -d <id> run` (or `--profile` / `--release`). Logs stream in this terminal.
+- [ ] **Step 4: Reproduce the issue / exercise the feature.** Watch the `run` console; use `r` for hot reload as needed. To keep a copy, re-run with `2>&1 | tee app.log`.
+- [ ] **Step 5: If debugging an externally-launched app**, attach with `flutter-tizen -d <id> attach --debug-url <url>` (start it via `flutter-tizen run` so the URL is printed — it cannot be grepped from `sdb dlog` on TV).
+- [ ] **Step 6: Detach cleanly** with `q` or `Ctrl-C`.
 
 ## Common failures
 
@@ -157,6 +119,6 @@ For VS Code, the bundled `flutter-tizen: Attach (project)` configuration perform
 | `sdb devices` shows `offline` | Device daemon dropped the host RSA fingerprint | `sdb kill-server && sdb start-server && sdb connect <ip>` |
 | `No connected Tizen devices` from `flutter-tizen` | sdb sees the device but flutter-tizen does not | Check `sdb -s <id> capability` succeeds; if it hangs, restart the device |
 | `flutter-tizen run` hangs at `Installing TPK` | Stale install of the same package conflicts | `sdb -s <id> uninstall <appid>` then retry |
-| `dlog` output stops abruptly | TV firmware aggressively rotates the log buffer | Add `-b main -b system` flags, or save to file |
-| `attach --debug-url` fails with `Connection refused` | The app crashed before printing the VM service URL, or printed an `http://...:0/` URL (port not yet allocated) | Restart the app with `--start-paused` and re-grep |
+| `flutter-tizen run` console shows no app output | App logged nothing yet, or crashed at startup | Trigger a `debugPrint`; for startup crashes re-run with `--start-paused` |
+| `attach --debug-url` fails with `Connection refused` | The app crashed before printing the VM service URL, or printed an `http://...:0/` URL (port not yet allocated) | Restart the app with `flutter-tizen run --start-paused` and use the URL it prints |
 | Multiple emulators selected ambiguously | Prefix match collision | Pass the full ID (`emulator-26101`, not `emulator`) |

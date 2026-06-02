@@ -254,7 +254,7 @@ Plugin package manifests are *metadata only* when present — the host app is wh
 - [ ] **Step 5: Add native API packages** in `tizen/project_def.prop` (`USER_PKGS` for `capi-*`; `USER_LIBS` only for plain libraries without pkg-config).
 - [ ] **Step 6: Add `<privilege>` and `<feature>` entries** in the plugin's documented manifest snippet and the example app's `tizen/tizen-manifest.xml`.
 - [ ] **Step 7: Define the Dart API** in `lib/<plugin>.dart` and the method-channel layer in `lib/<plugin>_method_channel.dart`.
-- [ ] **Step 8: Build the example app** for the target profile, install, and exercise every Dart method while watching `sdb dlog`.
+- [ ] **Step 8: Build the example app** for the target profile, install, and exercise every Dart method while watching the foreground `flutter-tizen run` console (on the common emulator you can additionally tail native logs with `sdb dlog`; dlog is blocked on every TV target).
 - [ ] **Step 9: Add `flutter_test` widget tests** at minimum; integration tests on a real device if the API depends on Tizen runtime state.
 
 ## Testing the plugin
@@ -262,15 +262,20 @@ Plugin package manifests are *metadata only* when present — the host app is wh
 ```sh
 # From the example/ directory of the plugin
 cd example
-flutter-tizen -d emulator-26101 run --debug
-
-# Tail engine + your own log tag (works on the common emulator)
-sdb -s emulator-26101 dlog FooTizen:V ConsoleMessage:V FlutterEngine:I *:S
+flutter-tizen -d <id> run --debug   # Dart print/debugPrint + PlatformException stream here
 ```
 
-> If you test on the Samsung TV emulator instead, `sdb dlog` is blocked (returns nothing) — read the foreground `flutter-tizen run` console there. dlog is verified only on the common emulator (`intershell_support:enabled`).
+The foreground `flutter-tizen run` console is the verification surface that works on **every** target, including TV — where `sdb dlog` / `sdb shell` are blocked (verified: `secure_protocol:enabled`). Bridge native state to the Dart layer so it shows in that console:
 
-In `src/log.h`, the template defines `LOG_TAG` to your plugin name; emit native logs with `LOGI(...)` / `LOGE(...)` so they show up under that tag. Anchor the Dart layer with `debugPrint` calls so `ConsoleMessage` carries the matching Dart-side state.
+- In `src/log.h` the template defines `LOG_TAG`; emit native logs with `LOGI(...)` / `LOGE(...)`.
+- Return native results through the method channel and `debugPrint` them; throw a `PlatformException` on failure so the Dart side prints the code/message.
+
+Native `LOG_TAG` output only reaches dlog, which is **not readable on any TV target**. To inspect it during development, run on the **common emulator**, where dlog works:
+
+```sh
+# Common emulator ONLY — dlog is blocked on every TV emulator/device
+sdb -s emulator-26101 dlog FooTizen:V ConsoleMessage:V FlutterEngine:I *:S
+```
 
 For unit tests on the Dart layer, mock `MethodChannel` via `TestDefaultBinaryMessengerBinding`:
 

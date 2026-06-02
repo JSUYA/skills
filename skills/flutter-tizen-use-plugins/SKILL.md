@@ -142,19 +142,24 @@ This call **does not work** without the matching `<privilege>` line in `tizen-ma
 - [ ] **Step 5: Update `tizen/tizen-manifest.xml`** — add `<privilege>` entries and any `<feature>` selectors.
 - [ ] **Step 6: For privacy privileges**, add a runtime request flow via `permission_handler` (or the plugin's own permission API).
 - [ ] **Step 7: Build + install** on the actual target profile. Privilege failures are profile-specific — e.g. some `tv` profiles silently drop privileges that work on `common`.
-- [ ] **Step 8: Verify at runtime** by exercising the plugin code path and watching `sdb dlog` for `permission denied` or `ERR_*` lines.
+- [ ] **Step 8: Verify at runtime** by exercising the plugin code path and watching the foreground `flutter-tizen run` console for the call result or a `PlatformException` (e.g. `permission denied`).
 
 ## Verifying the plugin works
 
-> The Samsung TV emulator blocks `sdb dlog` (verified: `secure_protocol:enabled`, returns 0 lines). On that target watch the foreground `flutter-tizen run` console instead. `sdb dlog` is available only where `sdb capability` shows `intershell_support:enabled` — verified on the common emulator.
+> `sdb dlog` / `sdb shell` do not work on Tizen TV targets (verified: `sdb capability` shows `secure_protocol:enabled`). Verify from the **foreground `flutter-tizen run` console** instead.
 
-```sh
-# After install, watch the engine log for plugin registration
-sdb -s <id> dlog FlutterEngine:V ConsoleMessage:V *:S | grep -i 'plugin'
+Plugin registration and Dart-side `print`/`debugPrint` appear directly in the `run` console. Surface native failures to the Dart side so they show there too:
 
-# Plugins log their failures with Tizen's standard ERR_* macros
-sdb -s <id> dlog *:E
+```dart
+try {
+  final result = await MyPlugin.doThing();
+  debugPrint('plugin ok: $result');
+} on PlatformException catch (e) {
+  debugPrint('plugin failed: ${e.code} ${e.message}'); // e.g. permission denied
+}
 ```
+
+(A plugin's native `ERR_*` macros log to dlog, which is unavailable on TV — catch the call on the Dart side as above to see the failure in the `run` console.)
 
 A common false-positive: `flutter-tizen pub get` succeeds but the plugin's native code is missing from the TPK. Confirm with:
 

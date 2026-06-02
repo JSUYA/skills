@@ -36,11 +36,10 @@ Match the profile and arch to the target. Mismatches produce installer errors th
 | Raspberry Pi 4 (Tizen OS) | `common` | `arm` or `arm64` | Match the installed Tizen image word size |
 | Tizen common emulator (Tizen 10.x) | `common` | `x64` | 64-bit; older images use `x86`. Must build `--debug`; set manifest `api-version` to `8.0`+ |
 
-Find the target's arch with:
+Find the target's arch with `sdb capability` — it works on every target, including TV (where `sdb shell` is blocked, so `sdb shell uname -m` returns nothing):
 
 ```sh
-sdb -s <device-id> capability | grep -E 'cpu_arch|profile_name'   # works on every target, incl. secured TV emulator
-sdb -s <device-id> shell uname -m                                 # only where the shell is open; the secured TV emulator returns nothing
+sdb -s <device-id> capability | grep -E 'cpu_arch|profile_name'
 ```
 
 ## Build modes
@@ -98,7 +97,7 @@ unzip -p build/tizen/tpk/*.tpk tizen-manifest.xml | head -40
 # Signature blocks (must contain both author-signature.xml and signature1.xml)
 unzip -l build/tizen/tpk/*.tpk | grep -E 'signature|manifest'
 
-# Listed appid (used by sdb shell app_launcher, dlog tagging, etc.)
+# Listed appid (used by sdb install/uninstall, launch, etc.)
 unzip -p build/tizen/tpk/*.tpk tizen-manifest.xml | grep -oE 'appid="[^"]+"'
 ```
 
