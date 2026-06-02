@@ -170,7 +170,7 @@ Body''');
         expect(result.isValid, isFalse);
         expect(
           result.errors,
-          contains(contains('Maximum ${ValidYamlMetadataRule.maxCompatibilityLength} characters')),
+          contains(contains('maximum is ${ValidYamlMetadataRule.maxCompatibilityLength}')),
         );
       });
     });
