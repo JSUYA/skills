@@ -142,38 +142,24 @@ Snap-back patterns (focus must stop at the last item in a row, not wrap) are imp
 
 ## Verifying on a TV / emulator
 
-> **The default Samsung "tv" profile emulator blocks `sdb shell` and `sdb dlog`.** Verified on `T-samsung-10.0-x86_64` (Tizen 10.0): its `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so `sdb shell input_keyevent …`, `sdb dlog …`, and `sdb root on` all fail (empty output / `closed` / `Permission denied`). The sdb tricks below work **only** on targets where the shell is open (the *common*/standard Tizen emulator, real devices in developer mode). Always gate on the capability first:
+> **`sdb shell` does not work on the Samsung TV emulator — so no sdb-based key injection or log reading works there.** Verified on `T-samsung-10.0-x86_64` (Tizen 10.0): `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so `sdb shell …` (incl. `input_keyevent`), `sdb dlog …`, and `sdb root on` all fail silently (empty output / `closed` / `Permission denied`). Confirm on any target with:
 >
 > ```sh
 > sdb -s <id> capability | grep -E 'intershell_support|secure_protocol'
 > ```
->
-> - `intershell_support:enabled` → `sdb shell <cmd>` works → use `input_keyevent` below.
-> - `intershell_support:disabled` (secured TV emulator) → drive the remote from the **emulator's on-screen control panel** or a **paired host keyboard** (arrow keys = D-pad, Enter = OK, Backspace/Esc = Back). No sdb key injection is available.
 
-### Synthesizing keys (only when `intershell_support:enabled`)
+### Driving the remote (TV emulator)
 
-Verified on the common Tizen emulator: synthesize remote keys with Tizen's `input_keyevent` tool (X11-style keysyms — *not* Android's `KEY_*` codes):
+There is **no sdb key-injection path on the TV emulator**. Send keys through either:
 
-```sh
-# Move focus right, then activate
-sdb -s <id> shell input_keyevent Right
-sdb -s <id> shell input_keyevent Return
+- the **emulator's on-screen control panel** (its remote / key window), or
+- a **paired host keyboard** — arrow keys = D-pad, Enter = OK, Backspace/Esc = Back.
 
-# Back
-sdb -s <id> shell input_keyevent XF86Back
-
-# Names from the tool's own USAGE output:
-#   Left | Right | Up | Down | Return | XF86Back | XF86HomePage |
-#   XF86Red | XF86Green | XF86Yellow | XF86Blue |
-#   XF86AudioPlay | XF86AudioPause | XF86AudioStop
-```
-
-`input_keyevent <name>` synthesizes a down+up pair; add `down` or `up` as a second arg to send only one half. **Caveat:** the tool exits `0` even for an unknown keysym — typos fail silently with no error, so verify the name.
+> `sdb shell input_keyevent <X11-keysym>` (e.g. `Right`, `Return`, `XF86Back`) exists, but only on the **common** (non-TV) Tizen emulator, where `intershell_support:enabled`. It does **not** reach the TV emulator — do not use it for TV verification.
 
 ### Watching key events
 
-There is **no `flutter-tizen logs` command**. Read Dart/engine output from the foreground `flutter-tizen run` session (or `flutter-tizen attach` to a running app). Where the shell is open (`secure_protocol:disabled`), `sdb dlog ConsoleMessage:V *:S` also works; on the secured TV emulator `sdb dlog` returns nothing.
+There is **no `flutter-tizen logs` command**, and `sdb dlog` returns nothing on the TV emulator. Read Dart/engine output from the foreground `flutter-tizen run` session (or `flutter-tizen attach` to a running app) — that is the only log channel that works on the TV emulator.
 
 For sanity-checking from inside Flutter, drop a temporary listener:
 

@@ -79,7 +79,7 @@ While the app runs, keypresses in the terminal are forwarded:
 
 Tizen's logging system is `dlog`, surfaced via `sdb dlog`. By default it dumps every tag on every priority — useless. Always filter.
 
-> **The default secured Samsung TV emulator blocks `sdb dlog` and `sdb shell`.** Verified on `T-samsung-10.0-x86_64`: its `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so every `sdb dlog …` returns 0 lines and every `sdb shell …` (incl. `pgrep`) returns nothing — silently, with no error. On that target, read logs from the **foreground `flutter-tizen run` console** instead (it streams over the Dart VM service, not dlog). `sdb dlog`/`sdb shell` work on real Samsung TVs in **Developer Mode** and on the **common** emulator. Check the target first:
+> **The Samsung TV emulator blocks `sdb dlog` and `sdb shell`.** Verified on `T-samsung-10.0-x86_64`: its `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so every `sdb dlog …` returns 0 lines and every `sdb shell …` (incl. `pgrep`) returns nothing — silently, with no error. On that target, read logs from the **foreground `flutter-tizen run` console** instead (it streams over the Dart VM service, not dlog). `sdb dlog`/`sdb shell` are available only where `sdb capability` shows `intershell_support:enabled` — verified on the **common** emulator. Check the target first:
 >
 > ```sh
 > sdb -s <id> capability | grep -E 'intershell_support|secure_protocol'

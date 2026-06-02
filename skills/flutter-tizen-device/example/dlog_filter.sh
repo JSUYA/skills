@@ -2,9 +2,10 @@
 # Filter dlog to Flutter-relevant tags only.
 # Adjust DEVICE_ID and TAG to taste.
 #
-# NOTE: dlog is blocked on the secured Samsung TV emulator (capability shows
+# NOTE: dlog is blocked on the Samsung TV emulator (capability shows
 # secure_protocol:enabled — sdb dlog returns nothing there, with no error).
-# Works on real Samsung TVs in Developer Mode and on the common emulator.
+# Available only where capability shows intershell_support:enabled
+# (verified on the common emulator).
 # On the TV emulator, read the foreground `flutter-tizen run` console instead.
 
 set -eu

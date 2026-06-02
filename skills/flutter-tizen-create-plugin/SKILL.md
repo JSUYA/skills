@@ -268,7 +268,7 @@ flutter-tizen -d emulator-26101 run --debug
 sdb -s emulator-26101 dlog FooTizen:V ConsoleMessage:V FlutterEngine:I *:S
 ```
 
-> If you test on the secured Samsung TV emulator instead, `sdb dlog` is blocked (returns nothing) — read the foreground `flutter-tizen run` console there. dlog works on real TVs in Developer Mode.
+> If you test on the Samsung TV emulator instead, `sdb dlog` is blocked (returns nothing) — read the foreground `flutter-tizen run` console there. dlog is verified only on the common emulator (`intershell_support:enabled`).
 
 In `src/log.h`, the template defines `LOG_TAG` to your plugin name; emit native logs with `LOGI(...)` / `LOGE(...)` so they show up under that tag. Anchor the Dart layer with `debugPrint` calls so `ConsoleMessage` carries the matching Dart-side state.
 
