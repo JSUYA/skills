@@ -142,23 +142,38 @@ Snap-back patterns (focus must stop at the last item in a row, not wrap) are imp
 
 ## Verifying on a TV / emulator
 
-The Tizen TV emulator has a virtual remote panel — open it via the emulator's `extended controls` icon. From the host shell, you can also synthesize keys with Tizen's `input_keyevent` tool (X11-style key names — *not* Android's `KEY_*` codes):
+> **The default Samsung "tv" profile emulator blocks `sdb shell` and `sdb dlog`.** Verified on `T-samsung-10.0-x86_64` (Tizen 10.0): its `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so `sdb shell input_keyevent …`, `sdb dlog …`, and `sdb root on` all fail (empty output / `closed` / `Permission denied`). The sdb tricks below work **only** on targets where the shell is open (the *common*/standard Tizen emulator, real devices in developer mode). Always gate on the capability first:
+>
+> ```sh
+> sdb -s <id> capability | grep -E 'intershell_support|secure_protocol'
+> ```
+>
+> - `intershell_support:enabled` → `sdb shell <cmd>` works → use `input_keyevent` below.
+> - `intershell_support:disabled` (secured TV emulator) → drive the remote from the **emulator's on-screen control panel** or a **paired host keyboard** (arrow keys = D-pad, Enter = OK, Backspace/Esc = Back). No sdb key injection is available.
+
+### Synthesizing keys (only when `intershell_support:enabled`)
+
+Verified on the common Tizen emulator: synthesize remote keys with Tizen's `input_keyevent` tool (X11-style keysyms — *not* Android's `KEY_*` codes):
 
 ```sh
 # Move focus right, then activate
-sdb -s <emulator-id> shell input_keyevent Right
-sdb -s <emulator-id> shell input_keyevent Return
+sdb -s <id> shell input_keyevent Right
+sdb -s <id> shell input_keyevent Return
 
 # Back
-sdb -s <emulator-id> shell input_keyevent XF86Back
+sdb -s <id> shell input_keyevent XF86Back
 
-# Other useful names
+# Names from the tool's own USAGE output:
 #   Left | Right | Up | Down | Return | XF86Back | XF86HomePage |
 #   XF86Red | XF86Green | XF86Yellow | XF86Blue |
 #   XF86AudioPlay | XF86AudioPause | XF86AudioStop
 ```
 
-`input_keyevent <name>` synthesizes a down+up pair. Add `down` or `up` as a second arg to send only one half.
+`input_keyevent <name>` synthesizes a down+up pair; add `down` or `up` as a second arg to send only one half. **Caveat:** the tool exits `0` even for an unknown keysym — typos fail silently with no error, so verify the name.
+
+### Watching key events
+
+There is **no `flutter-tizen logs` command**. Read Dart/engine output from the foreground `flutter-tizen run` session (or `flutter-tizen attach` to a running app). Where the shell is open (`secure_protocol:disabled`), `sdb dlog ConsoleMessage:V *:S` also works; on the secured TV emulator `sdb dlog` returns nothing.
 
 For sanity-checking from inside Flutter, drop a temporary listener:
 
@@ -172,7 +187,7 @@ Focus(
 )
 ```
 
-Watch for the matching `LogicalKeyboardKey.*` value in `flutter-tizen logs` / `sdb dlog ConsoleMessage:V *:S`. If you see `LogicalKeyboardKey#xxxxx(keyId: 0x...)` instead of a named key, the engine is missing a mapping for that physical key — file upstream and use `physicalKey` to bridge in the meantime.
+If a button prints `LogicalKeyboardKey#xxxxx(keyId: 0x...)` instead of a named key, the engine is missing a mapping for that physical key — file upstream and use `physicalKey` to bridge in the meantime.
 
 ## Pitfalls
 

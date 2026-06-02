@@ -264,9 +264,11 @@ Plugin package manifests are *metadata only* when present — the host app is wh
 cd example
 flutter-tizen -d emulator-26101 run --debug
 
-# Tail engine + your own log tag
+# Tail engine + your own log tag (works on the common emulator)
 sdb -s emulator-26101 dlog FooTizen:V ConsoleMessage:V FlutterEngine:I *:S
 ```
+
+> If you test on the secured Samsung TV emulator instead, `sdb dlog` is blocked (returns nothing) — read the foreground `flutter-tizen run` console there. dlog works on real TVs in Developer Mode.
 
 In `src/log.h`, the template defines `LOG_TAG` to your plugin name; emit native logs with `LOGI(...)` / `LOGE(...)` so they show up under that tag. Anchor the Dart layer with `debugPrint` calls so `ConsoleMessage` carries the matching Dart-side state.
 

@@ -79,6 +79,12 @@ While the app runs, keypresses in the terminal are forwarded:
 
 Tizen's logging system is `dlog`, surfaced via `sdb dlog`. By default it dumps every tag on every priority — useless. Always filter.
 
+> **The default secured Samsung TV emulator blocks `sdb dlog` and `sdb shell`.** Verified on `T-samsung-10.0-x86_64`: its `sdb capability` reports `secure_protocol:enabled` and `intershell_support:disabled`, so every `sdb dlog …` returns 0 lines and every `sdb shell …` (incl. `pgrep`) returns nothing — silently, with no error. On that target, read logs from the **foreground `flutter-tizen run` console** instead (it streams over the Dart VM service, not dlog). `sdb dlog`/`sdb shell` work on real Samsung TVs in **Developer Mode** and on the **common** emulator. Check the target first:
+>
+> ```sh
+> sdb -s <id> capability | grep -E 'intershell_support|secure_protocol'
+> ```
+
 ### Filter by tag
 
 ```sh
@@ -114,7 +120,7 @@ sdb -s <id> dlog -d > snapshot.log    # dump and exit
 
 ## Attaching a debugger
 
-Direct `flutter-tizen run` already attaches the Dart VM service. For an app that is already running (e.g. launched by tapping its icon), attach manually:
+Direct `flutter-tizen run` already attaches the Dart VM service — and is the **only** option on the secured TV emulator, where the dlog-grep step below returns nothing (see the dlog caveat above). For an app that is already running (e.g. launched by tapping its icon) on a dlog-capable target, attach manually:
 
 1. Start the app on the device.
 2. Tail dlog for the VM Service URL:
@@ -136,7 +142,7 @@ For VS Code, the bundled `flutter-tizen: Attach (project)` configuration perform
 - [ ] **Step 1: Confirm connectivity.** `sdb devices` shows the target as `device` (not `offline`).
 - [ ] **Step 2: Select the device.** Capture the exact `device-id` and use it as `-d <id>` for every subsequent command.
 - [ ] **Step 3: Build + run.** `flutter-tizen -d <id> run` (or `--profile` / `--release`).
-- [ ] **Step 4: Clear and tail logs in a second shell.**
+- [ ] **Step 4: Clear and tail logs in a second shell.** (Skip on the secured TV emulator — dlog is blocked there; use the foreground `flutter-tizen run` console instead.)
    ```sh
    sdb -s <id> dlog -c && sdb -s <id> dlog ConsoleMessage:V FlutterEngine:I *:S
    ```

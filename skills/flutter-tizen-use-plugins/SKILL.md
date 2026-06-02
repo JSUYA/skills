@@ -146,6 +146,8 @@ This call **does not work** without the matching `<privilege>` line in `tizen-ma
 
 ## Verifying the plugin works
 
+> The secured Samsung TV emulator blocks `sdb dlog` (verified: `secure_protocol:enabled`, returns 0 lines). On that target watch the foreground `flutter-tizen run` console instead. `sdb dlog` works on real TVs in Developer Mode and on the common emulator.
+
 ```sh
 # After install, watch the engine log for plugin registration
 sdb -s <id> dlog FlutterEngine:V ConsoleMessage:V *:S | grep -i 'plugin'
