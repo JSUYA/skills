@@ -41,7 +41,8 @@ class AbsolutePathsRule extends SkillRule implements FixableRule {
             ruleId: name,
             severity: severity,
             file: _skillFileName,
-            message: 'Absolute filepath found in link: $path',
+            message:
+                'Absolute filepath found in link: $path. Skills must use paths relative to SKILL.md so they remain portable across machines.',
           ),
         );
       }

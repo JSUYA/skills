@@ -41,13 +41,16 @@ class NameFormatRule extends SkillRule implements FixableRule {
       return errors; // Handled by required fields check
     }
 
+    final String suggestedName = _suggestName(skillName);
+
     if (skillName != skillName.toLowerCase()) {
       errors.add(
         ValidationError(
           ruleId: name,
           severity: severity,
           file: _skillFileName,
-          message: 'Skill name must be lowercase: $skillName (see $_nameFieldUrl)',
+          message:
+              'Frontmatter `name` "$skillName" must be lowercase. Suggested: "$suggestedName" (see $_nameFieldUrl)',
         ),
       );
     }
@@ -70,7 +73,7 @@ class NameFormatRule extends SkillRule implements FixableRule {
           severity: severity,
           file: _skillFileName,
           message:
-              'Skill name contains invalid characters. Only lowercase letters, digits, and hyphens allowed (see $_nameFieldUrl)',
+              'Frontmatter `name` "$skillName" contains invalid characters. Only lowercase letters, digits, and hyphens allowed. Suggested: "$suggestedName" (see $_nameFieldUrl)',
         ),
       );
     }
@@ -105,7 +108,7 @@ class NameFormatRule extends SkillRule implements FixableRule {
           severity: severity,
           file: _skillFileName,
           message:
-              'Skill name ($skillName) must exactly match the parent directory name ($dirName) (see $_nameFieldUrl)',
+              'Frontmatter `name` "$skillName" does not match the parent directory name "$dirName"; it must exactly match the parent directory name. Suggested: "$dirName" (see $_nameFieldUrl)',
         ),
       );
     }
@@ -163,5 +166,14 @@ class NameFormatRule extends SkillRule implements FixableRule {
   @visibleForTesting
   static YamlNode? getNameNode(YamlMap yaml) {
     return yaml.nodes['name'];
+  }
+
+  static String _suggestName(String skillName) {
+    final String normalized = skillName
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9-]+'), '-')
+        .replaceAll(RegExp(r'-+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+    return normalized.isEmpty ? 'skill-name' : normalized;
   }
 }

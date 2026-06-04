@@ -42,8 +42,9 @@ cd tool/dart_skills_lint
 dart run bin/cli.dart -d ../../skills
 
 # Regenerate SKILL.md (requires GEMINI_API_KEY)
-cd tool
-dart run skills generate-skill --config ../resources/flutter_tizen_skills.yaml --output ../skills
+dart run tool/generator/bin/skills.dart generate-skill \
+  resources/flutter_tizen_skills.yaml \
+  --directory skills
 ```
 
 ## License

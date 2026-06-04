@@ -129,6 +129,45 @@ This ensures that you can always override configuration file settings for a spec
 
 ---
 
+## Recipes
+
+> Ask an agent to read `skills/dart-skills-lint-setup/SKILL.md` when adding the linter to a repository, then use `skills/dart-skills-lint-validation/SKILL.md` when validating or debugging skill failures.
+
+GitHub Actions:
+
+```yaml
+name: Lint Agent Skills
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: dart pub global activate dart_skills_lint
+      - run: dart pub global run dart_skills_lint --skills-directory ./.claude/skills
+```
+
+Pre-commit hook:
+
+```bash
+mkdir -p .git/hooks
+cat > .git/hooks/pre-commit <<'HOOK'
+#!/usr/bin/env bash
+set -euo pipefail
+
+dart pub global run dart_skills_lint --skills-directory ./.claude/skills
+HOOK
+chmod +x .git/hooks/pre-commit
+```
+
 ### 3. As Dart Test Code
 You can integrate the linter into your automated tests by importing the package and calling `validateSkills`. This allows you to enforce skill validity as part of your standard test suite.
 
@@ -231,4 +270,3 @@ The linter checks against the criteria defined in `documentation/knowledge/SPECI
 ## Contributing
 
 Contributions are welcome! Please ensure that any PRs pass the linter themselves and align with the `documentation/knowledge/SPECIFICATION.md`.
-

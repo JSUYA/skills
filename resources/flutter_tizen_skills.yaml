@@ -3,11 +3,11 @@
 # BSD-style license that can be found in the LICENSE file.
 
 # Configuration file for the skill generator (vendored from flutter/skills).
-# Regenerate the SKILL.md files (from the `tool` directory):
+# Regenerate the SKILL.md files (from the repository root):
 #
-#   dart run skills generate-skill \
-#       --config ../resources/flutter_tizen_skills.yaml \
-#       --output ../skills
+#   dart run tool/generator/bin/skills.dart generate-skill \
+#       resources/flutter_tizen_skills.yaml \
+#       --directory skills
 #
 # Requires GEMINI_API_KEY for live generation. Hand-review every output —
 # Tizen-specific CLI flags, plugin names, and privilege URLs hallucinate easily.

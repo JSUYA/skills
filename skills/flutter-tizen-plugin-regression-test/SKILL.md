@@ -4,6 +4,7 @@ description: Run regression tests for flutter-tizen plugins after changes to flu
 metadata:
   target: flutter-tizen
   category: testing
+  last_modified: Thu, 04 Jun 2026 00:00:00 GMT
 ---
 # Flutter-Tizen Plugin Regression Testing
 

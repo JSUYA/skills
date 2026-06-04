@@ -29,17 +29,21 @@ Skills are generated from `resources/flutter_tizen_skills.yaml` plus the doc URL
 1. Edit the entry in `resources/flutter_tizen_skills.yaml`.
 2. Regenerate the SKILL.md:
    ```bash
-   cd tool
-   dart run skills generate-skill --config ../resources/flutter_tizen_skills.yaml --output ../skills
+   dart run tool/generator/bin/skills.dart generate-skill \
+     resources/flutter_tizen_skills.yaml \
+     --directory skills
    ```
 3. Hand-review the output — Tizen-specific CLI flags, plugin names, and privilege URLs are easy for the generator to hallucinate.
 4. Lint:
    ```bash
-   dart run dart_skills_lint
+   dart run tool/dart_skills_lint/bin/cli.dart -d skills
    ```
 5. Update the README table:
    ```bash
-   dart run skills update-readme
+   dart run tool/generator/bin/skills.dart update-readme \
+     resources/flutter_tizen_skills.yaml \
+     --directory skills \
+     --readme README.md
    ```
 
 ## Issue triage
