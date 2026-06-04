@@ -1,8 +1,8 @@
 # Flutter-Tizen Agent Skills
 
-Agent skills for [flutter-tizen](https://github.com/flutter-tizen/flutter-tizen) — Samsung's Flutter embedder for Tizen TV / IoT-Headed / RPi targets.
+AI agent skills for [flutter-tizen](https://github.com/flutter-tizen/flutter-tizen). This skill set, maintained by the Flutter-Tizen team, provides guidelines designed for common workflows in Flutter app development for Tizen.
 
-Provides 6 Tizen-specific skills. Use with [flutter/skills](https://github.com/flutter/skills) for general Flutter development.
+Provides Tizen-specific skills. Use with [flutter/skills](https://github.com/flutter/skills) for general Flutter development.
 
 ## Skills
 
@@ -19,13 +19,13 @@ Provides 6 Tizen-specific skills. Use with [flutter/skills](https://github.com/f
 
 ```bash
 # Install all skills
-npx skills add JSUYA/flutter_tizen_skills --skill '*' --agent universal
+npx skills add flutter-tizen/skills --skill '*' --agent universal
 
 # Install specific skills
-npx skills add JSUYA/flutter_tizen_skills --skill flutter-tizen-setup,flutter-tizen-build-tpk
+npx skills add flutter-tizen/skills --skill flutter-tizen-setup,flutter-tizen-build-tpk
 
 # Global install
-npx skills add JSUYA/flutter_tizen_skills --skill '*' --global
+npx skills add flutter-tizen/skills --skill '*' --global
 
 # Update
 npx skills update
