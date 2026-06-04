@@ -12,6 +12,7 @@ import '../models/skill_params.dart';
 import '../services/gemini_service.dart';
 import '../services/resource_fetcher_service.dart';
 import 'base_skill_command.dart';
+import 'base_yaml_command.dart' show defaultSkillsConfigPath, resolveConfigFile;
 
 /// Command to validate skills by re-generating and comparing with existing skills.
 class ValidateSkillCommand extends BaseSkillCommand {
@@ -37,9 +38,9 @@ class ValidateSkillCommand extends BaseSkillCommand {
   Future<void> run() async {
     final inputFile = argResults!.rest.isNotEmpty
         ? argResults!.rest.first
-        : 'resources/flutter_skills.yaml';
+        : defaultSkillsConfigPath;
 
-    final file = File(inputFile);
+    final file = resolveConfigFile(inputFile);
     if (!file.existsSync()) {
       logger.severe('Configuration file not found: $inputFile');
       return;

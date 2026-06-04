@@ -455,6 +455,68 @@ void main() {
       );
     });
 
+    test('uses flutter_tizen_skills.yaml when config is omitted', () async {
+      final resourcesDir = Directory(p.join(tempDir.path, 'resources'));
+      await resourcesDir.create();
+      final defaultConfigFile = File(
+        p.join(resourcesDir.path, 'flutter_tizen_skills.yaml'),
+      );
+      await defaultConfigFile.writeAsString(
+        jsonEncode([
+          {
+            'name': 'default-config-skill',
+            'description': 'Description',
+            'resources': ['https://example.com/source'],
+          },
+        ]),
+      );
+
+      final logs = <String>[];
+      final sub = Logger.root.onRecord.listen(
+        (record) => logs.add(record.message),
+      );
+      addTearDown(sub.cancel);
+
+      var geminiCalled = false;
+      final mockClient = MockClient((request) async {
+        if (request.url.toString() == 'https://example.com/source') {
+          return http.Response('<html>Content</html>', 200);
+        }
+        if (request.url.toString().contains('generativelanguage')) {
+          geminiCalled = true;
+          return http.Response('Unexpected Gemini call', 500);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final command = GenerateSkillCommand(
+        environment: {},
+        httpClient: mockClient,
+        outputDir: tempDir,
+      );
+      runner.addCommand(command);
+
+      await IOOverrides.runZoned(() async {
+        await runner.run(['generate-skill', '--dry-run']);
+      }, getCurrentDirectory: () => tempDir);
+
+      expect(
+        logs,
+        isNot(
+          contains(
+            'Configuration file not found: resources/flutter_tizen_skills.yaml',
+          ),
+        ),
+      );
+      expect(
+        logs,
+        contains(
+          contains('[DRY RUN] Would generate skill: default-config-skill'),
+        ),
+      );
+      expect(geminiCalled, isFalse);
+    });
+
     test('dry run fetches content but skips Gemini and file writes', () async {
       final inputData = [
         {

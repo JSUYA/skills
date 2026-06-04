@@ -127,5 +127,32 @@ void main() {
 
       expect(logs, contains('GEMINI_API_KEY environment variable not set.'));
     });
+
+    test('does not require GEMINI_API_KEY during dry run', () async {
+      final configFile = File(p.join(tempDir.path, 'config.yaml'));
+      await configFile.writeAsString(
+        jsonEncode(<Map<String, dynamic>>[
+          {
+            'name': 'existent-skill',
+            'description': 'desc',
+            'resources': <String>[],
+          },
+        ]),
+      );
+
+      runner = CommandRunner(
+        'skills',
+        'Test runner',
+      )..addCommand(_TestSkillCommand(httpClient: mockClient, environment: {}));
+
+      await IOOverrides.runZoned(() async {
+        await runner.run(['test-command', '--dry-run', configFile.path]);
+      }, getCurrentDirectory: () => tempDir);
+
+      expect(
+        logs,
+        isNot(contains('GEMINI_API_KEY environment variable not set.')),
+      );
+    });
   });
 }

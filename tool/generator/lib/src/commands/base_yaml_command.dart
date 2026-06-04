@@ -7,9 +7,21 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:logging/logging.dart';
+import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import '../models/skill_params.dart';
+
+/// Default YAML configuration path when no config file is passed.
+const defaultSkillsConfigPath = 'resources/flutter_tizen_skills.yaml';
+
+/// Resolves a config file path relative to the current working directory.
+File resolveConfigFile(String inputFile) {
+  final path = p.isAbsolute(inputFile)
+      ? inputFile
+      : p.join(Directory.current.path, inputFile);
+  return File(path);
+}
 
 /// Base command for operations that read skills from a YAML file.
 abstract class BaseYamlCommand extends Command<void> {
@@ -34,9 +46,9 @@ abstract class BaseYamlCommand extends Command<void> {
   Future<void> run() async {
     final inputFile = argResults!.rest.isNotEmpty
         ? argResults!.rest.first
-        : 'resources/flutter_skills.yaml';
+        : defaultSkillsConfigPath;
 
-    final file = File(inputFile);
+    final file = resolveConfigFile(inputFile);
     if (!file.existsSync()) {
       logger.severe('Configuration file not found: $inputFile');
       return;

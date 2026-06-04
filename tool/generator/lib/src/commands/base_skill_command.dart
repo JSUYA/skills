@@ -47,13 +47,17 @@ abstract class BaseSkillCommand extends BaseYamlCommand {
     Directory outputDir, {
     Directory? configDir,
   }) async {
+    final dryRun = argResults?['dry-run'] as bool? ?? false;
     final apiKey = (environment ?? Platform.environment)['GEMINI_API_KEY'];
-    if (apiKey == null) {
+    if (apiKey == null && !dryRun) {
       logger.severe('GEMINI_API_KEY environment variable not set.');
       return;
     }
 
-    final gemini = GeminiService(apiKey: apiKey, httpClient: httpClient);
+    final gemini = GeminiService(
+      apiKey: apiKey ?? 'dry-run',
+      httpClient: httpClient,
+    );
 
     int thinkingBudget;
     try {

@@ -69,6 +69,70 @@ void main() {
       expect(logs, isNot(contains('Configuration validation failed.')));
     });
 
+    test('uses flutter_tizen_skills.yaml when config is omitted', () async {
+      final resourcesDir = Directory(p.join(tempDir.path, 'resources'));
+      await resourcesDir.create();
+      final defaultConfigFile = File(
+        p.join(resourcesDir.path, 'flutter_tizen_skills.yaml'),
+      );
+      await defaultConfigFile.writeAsString(
+        jsonEncode([
+          {
+            'name': 'flutter-tizen-default',
+            'description': 'A Flutter-Tizen skill',
+            'resources': ['https://example.com/doc'],
+          },
+        ]),
+      );
+
+      final skillDir = Directory(p.join(tempDir.path, 'flutter-tizen-default'));
+      await skillDir.create();
+      await File(p.join(skillDir.path, 'SKILL.md')).writeAsString('''
+---
+name: flutter-tizen-default
+metadata:
+  last_modified: Thu, 04 Jun 2026 00:00:00 GMT
+---
+
+# Flutter-Tizen Default
+''');
+
+      mockClient = MockClient((request) async {
+        if (request.url.toString() == 'https://example.com/doc') {
+          return http.Response('<html>Content</html>', 200);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      runner = CommandRunner<void>('skills', 'Test runner')
+        ..addCommand(
+          ValidateSkillCommand(
+            environment: {},
+            outputDir: tempDir,
+            httpClient: mockClient,
+          ),
+        );
+
+      await IOOverrides.runZoned(() async {
+        await runner.run(['validate-skill', '--dry-run']);
+      }, getCurrentDirectory: () => tempDir);
+
+      expect(
+        logs,
+        isNot(
+          contains(
+            'Configuration file not found: resources/flutter_tizen_skills.yaml',
+          ),
+        ),
+      );
+      expect(
+        logs,
+        contains(
+          contains('[DRY RUN] Would validate skill: flutter-tizen-default'),
+        ),
+      );
+    });
+
     test('fails when root structure is not a list', () async {
       final content = jsonEncode({'name': 'flutter-test-skill'});
 
