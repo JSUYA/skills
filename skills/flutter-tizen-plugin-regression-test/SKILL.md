@@ -377,42 +377,6 @@ Reports are saved to:
 | `SIGSEGV` in native code | Native plugin crash | Check Tizen native implementation |
 | `Privilege denied` error | Missing privilege in manifest | Add required privilege to `tizen-manifest.xml` |
 
-## Workflow: Full Regression Test (All Plugins)
-
-When no specific plugin is provided, test all plugins in order:
-
-### Task Progress
-- [ ] **Step 1: Parse user input.** Check if user specified plugin name(s).
-- [ ] **Step 2: Determine plugin list.**
-   - If user specified plugin(s) → Use only those plugins
-   - If no plugin specified → Read `.github/recipe.yaml` and use plugins with `["tv-9.0"]` profile
-- [ ] **Step 3: Select/Verify device.** Use user-specified device OR launch TV 9.0 emulator if not running.
-- [ ] **Step 4: For each plugin:**
-   - [ ] Run example app and capture logs
-   - [ ] Analyze logs for errors
-   - [ ] Check for integration test structure
-   - [ ] Run integration tests if available
-   - [ ] Analyze test results
-   - [ ] Record results
-- [ ] **Step 5: Generate summary report** with all plugin results.
-- [ ] **Step 6: Generate individual issue reports** for failed plugins.
-
-### Plugin List Resolution
-
-The skill resolves the plugin list in this order:
-
-1. **User-specified plugin(s)** - If the user explicitly names one or more plugins, test only those
-2. **recipe.yaml default list** - If no plugin specified, read `.github/recipe.yaml` and use plugins with `["tv-9.0"]` profile
-
-Example recipe.yaml parsing:
-```yaml
-plugins:
-  audioplayers: ["tv-9.0"]      # ← Include (testable on TV)
-  connectivity_plus: ["tv-9.0"] # ← Include (testable on TV)
-  permission_handler: []        # ← Skip (empty array)
-  flutter_webrtc: []           # ← Skip (not testable on emulator)
-```
-
 ## Example
 
 ### Testing a Single Plugin (User-Specified Plugin)
@@ -432,21 +396,6 @@ User: Run regression test for connectivity_plus plugin
 10. Generate report if issues found
 ```
 
-### Testing Multiple User-Specified Plugins
-
-```
-User: Run regression test for connectivity_plus and url_launcher
-
-1. Parse user input → Plugins: connectivity_plus, url_launcher (user-specified)
-2. Verify environment (flutter-tizen, Tizen SDK, certificate)
-3. Check if TV emulator is running, launch if needed
-4. For each plugin (connectivity_plus, url_launcher):
-   - Run example app
-   - Run integration tests
-   - Record results
-5. Generate summary report
-```
-
 ### Testing All Plugins (No Plugin Specified - Use recipe.yaml)
 
 ```
@@ -463,60 +412,6 @@ User: Run regression test
 6. Generate summary report
 ```
 
-### Testing with User-Specified Device
-
-```
-User: Run regression test for connectivity_plus plugin on device T-12345
-
-1. Parse user input → Device ID: T-12345 (user-specified)
-2. Verify device is connected: sdb devices | grep T-12345
-3. Verify environment (flutter-tizen, Tizen SDK, certificate)
-4. cd packages/connectivity_plus/example
-5. flutter-tizen -d T-12345 run --debug  (use user-specified device)
-6. Capture and analyze logs
-7. Run integration tests on T-12345
-8. Analyze test output
-9. Generate report if issues found
-```
-
-### Testing with User-Specified Emulator
-
-```
-User: Run regression test for connectivity_plus on emulator emulator-26101
-
-1. Parse user input → Emulator ID: emulator-26101 (user-specified)
-2. Verify emulator is running: sdb devices | grep emulator-26101
-3. Verify environment (flutter-tizen, Tizen SDK, certificate)
-4. cd packages/connectivity_plus/example
-5. flutter-tizen -d emulator-26101 run --debug  (use user-specified emulator)
-6. Capture and analyze logs
-7. Run integration tests on emulator-26101
-8. Analyze test output
-9. Generate report if issues found
-```
-
-### Testing with Device Type Keyword
-
-```
-User: Run regression test for connectivity_plus on emulator
-
-1. Parse user input → Device type: emulator (user wants emulator)
-2. Check for running emulators: sdb devices
-3. If emulator found → Use it
-   If no emulator → Launch TV 9.0 emulator
-4. Proceed with selected emulator
-```
-
-```
-User: Run regression test for connectivity_plus on real device
-
-1. Parse user input → Device type: real device (user wants physical device)
-2. Check for connected physical devices: sdb devices
-3. If device found → Use it
-   If no device → Error: "No physical device connected"
-4. Proceed with selected device
-```
-
 ### Testing with Skip Options
 
 ```
@@ -527,35 +422,6 @@ User: Run regression test for connectivity_plus on device T-12345, skip integrat
 3. Run example app only
 4. Skip integration test step
 5. Generate report for example app results
-```
-
-### Testing All Plugins
-
-```
-User: Run regression test for all plugins
-
-1. Read .github/recipe.yaml for testable plugins
-2. Launch TV emulator
-3. For each plugin in testable list:
-   - Run example app
-   - Run integration tests
-   - Record results
-4. Generate summary report
-```
-
-### Testing All Plugins on User-Specified Device
-
-```
-User: Run regression test for all plugins on device T-12345
-
-1. Parse user input → Device: T-12345 (user-specified)
-2. Verify device is connected: sdb devices | grep T-12345
-3. Read .github/recipe.yaml for testable plugins
-4. For each plugin in testable list:
-   - Run example app on T-12345
-   - Run integration tests on T-12345
-   - Record results
-5. Generate summary report
 ```
 
 ## Related Skills

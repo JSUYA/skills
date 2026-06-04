@@ -283,10 +283,10 @@
 
 - name: flutter-tizen-plugin-regression-test
   description: Run regression tests for flutter-tizen plugins after changes to
-    the flutter-tizen tool, embedder, or engine. Use when validating plugin
-    compatibility after a flutter-tizen update, or when running CI-style
-    plugin verification — runs example apps and integration tests on the TV
-    emulator, analyzes logs, and generates issue reports.
+    flutter-tizen tool, embedder, or engine. Executes example apps and
+    integration tests on TV emulator, analyzes logs, and generates issue
+    reports. Use when validating plugin compatibility after flutter-tizen
+    updates, or when running CI-style plugin verification.
   examplePrompt: "Run a regression test for connectivity_plus on the TV 9.0 emulator"
   instructions: |
     1. **Verify the environment.** `flutter-tizen doctor -v`, `sdb version`,
