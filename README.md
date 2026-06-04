@@ -47,6 +47,8 @@ dart run tool/generator/bin/skills.dart generate-skill \
   --directory skills
 ```
 
+> **Note:** The `tool/` directory (skill generator, linter, and git hooks) is sourced from [flutter/skills](https://github.com/flutter/skills) and kept in sync with its upstream updates.
+
 ## License
 
 [BSD 3-Clause License](LICENSE)
