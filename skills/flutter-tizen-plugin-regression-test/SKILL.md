@@ -205,11 +205,16 @@ Note: `flutter-tizen run` automatically detects the device profile and architect
 
 ### Log Capture
 
-While the app runs, capture logs in a separate terminal:
+> **Do not use `sdb dlog` on the Samsung TV emulator — it does not work.** Verified on `T-samsung-10.0-x86_64`: `sdb capability` reports `secure_protocol:enabled` + `intershell_support:disabled`, so `sdb dlog` (and `dlog -c`) return **no output at all** (silently, with no error). Every grep over the empty result matches nothing, so the test silently reports a false PASS. `sdb dlog` works only on the **common** emulator (`secure_protocol:disabled`). Confirm on any target with:
+>
+> ```sh
+> sdb -s <device-id> capability | grep -E 'secure_protocol|intershell_support'
+> ```
+
+Capture logs from the **foreground `flutter-tizen run` session** instead — the only log channel that works on the TV emulator. It streams Dart `print`/`debugPrint` and Flutter engine messages, so redirect that process to a file:
 
 ```sh
-sdb -s <device-id> dlog -c  # Clear log buffer
-sdb -s <device-id> dlog ConsoleMessage:V FlutterEngine:I *:S > example_run.log
+flutter-tizen -d <device-id> run --debug > example_run.log 2>&1
 ```
 
 ### Success Criteria

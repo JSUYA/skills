@@ -156,13 +156,11 @@ generate_summary() {
     
     # Count log files
     local example_logs=$(find "$log_dir" -name "*_example_run.log" 2>/dev/null | wc -l)
-    local dlog_logs=$(find "$log_dir" -name "*_dlog.log" 2>/dev/null | wc -l)
     local test_logs=$(find "$log_dir" -name "*_test_output.log" 2>/dev/null | wc -l)
     local issue_files=$(find "$log_dir" -name "*_issues.txt" 2>/dev/null | wc -l)
-    
+
     echo "Log files found:"
     echo "  - Example run logs: $example_logs"
-    echo "  - Dlog outputs: $dlog_logs"
     echo "  - Test outputs: $test_logs"
     echo "  - Issue reports: $issue_files"
     
@@ -190,8 +188,9 @@ main() {
         # Directory mode: analyze all logs
         log_info "Analyzing all logs in: $target"
         
-        # Analyze example logs
-        for log_file in "$target"/*_example_run.log "$target"/*_dlog.log; do
+        # Analyze example logs (captured from the foreground `flutter-tizen run`
+        # session — `sdb dlog` is unavailable on the TV emulator)
+        for log_file in "$target"/*_example_run.log; do
             if [[ -f "$log_file" ]]; then
                 analyze_example_logs "$log_file"
             fi

@@ -137,37 +137,31 @@ run_example_app() {
     
     log_info "Running example app for: $plugin_name"
     cd "$example_dir"
-    
-    # Clear log buffer
-    sdb -s "$TV_EMULATOR_ID" dlog -c
-    
-    # Run the app in background
+
+    # NOTE: `sdb dlog` does NOT work on the Samsung TV emulator
+    # (secure_protocol:enabled, intershell_support:disabled) — it returns no
+    # output, so it must not be used as a log source here. The foreground
+    # `flutter-tizen run` session is the only log channel that works on TV; it
+    # streams Dart print/debugPrint and engine messages, which we capture below.
     mkdir -p "$OUTPUT_DIR/logs"
     flutter-tizen -d "$TV_EMULATOR_ID" run --debug > "$log_file" 2>&1 &
     local app_pid=$!
-    
-    # Capture logs in separate file
-    local dlog_file="$OUTPUT_DIR/logs/${plugin_name}_dlog.log"
-    sdb -s "$TV_EMULATOR_ID" dlog ConsoleMessage:V FlutterEngine:I *:S > "$dlog_file" 2>&1 &
-    local dlog_pid=$!
-    
+
     # Wait for app to start
     sleep 10
-    
+
     # Check if app is running
     if ! kill -0 $app_pid 2>/dev/null; then
         log_error "App crashed during startup"
-        kill $dlog_pid 2>/dev/null || true
         return 1
     fi
-    
+
     # Let the app run for a bit
     sleep 15
-    
-    # Stop the app and log capture
+
+    # Stop the app
     kill $app_pid 2>/dev/null || true
-    kill $dlog_pid 2>/dev/null || true
-    
+
     log_info "Example app run completed for: $plugin_name"
     return 0
 }
@@ -213,7 +207,7 @@ run_integration_tests() {
 # Analyze logs for issues
 analyze_logs() {
     local plugin_name="$1"
-    local log_file="$OUTPUT_DIR/logs/${plugin_name}_dlog.log"
+    local log_file="$OUTPUT_DIR/logs/${plugin_name}_example_run.log"
     local issues_file="$OUTPUT_DIR/logs/${plugin_name}_issues.txt"
     
     if [[ ! -f "$log_file" ]]; then
@@ -281,7 +275,6 @@ Test completed. Check logs in: $OUTPUT_DIR/logs/${plugin_name}_*
 ## Log Files
 
 - Example run log: $OUTPUT_DIR/logs/${plugin_name}_example_run.log
-- Dlog output: $OUTPUT_DIR/logs/${plugin_name}_dlog.log
 - Test output: $OUTPUT_DIR/logs/${plugin_name}_test_output.log
 
 EOF
