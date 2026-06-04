@@ -55,29 +55,36 @@
     real device.
   examplePrompt: "Build a signed release TPK for Samsung TV 2022"
   instructions: |
-    1. **Confirm `tizen-manifest.xml` matches the target.** `<manifest
-       profile="..."` and `api-version` must match the device profile (e.g.
-       `tv` + `6.5` for a 2022 TV).
-    2. **Pick the build mode.** `--debug` (JIT, attachable, emulator-only)
+    1. **Confirm `tizen/tizen-manifest.xml` matches the target.** `<manifest
+       profile="...">` and `api-version` must match the device profile (e.g.
+       `tv` + `6.5` for a 2022 TV). `x64` builds require `api-version="8.0"`
+       or newer; the default generated `6.0` manifest fails on x64.
+    2. **Pick the build mode.** `--debug` (JIT, required for any emulator)
        or `--release` (AOT, signed for store, default). `--profile` for
-       tracing builds.
-    3. **Pick the device profile** with `--device-profile {common|tv}`.
-       TV requires `tv`; phone, IoT-Headed, and Raspberry Pi targets use
-       `common`. `mobile` and `wearable` are not documented in current
-       `flutter-tizen` `doc/commands.md`.
-    4. **Pick the ABI** with `--target-arch` — `arm` / `arm64` for real
-       hardware; `x86` for TV emulator; `x64` for newer common emulator.
-       Confirm with `sdb shell uname -m`. `x64` requires
-       `api-version="8.0"` or newer in `tizen/tizen-manifest.xml`.
+       tracing builds on real hardware.
+    3. **Pick the device profile** with `--device-profile {common|tv}`. The
+       default is `tv`, so always pass it explicitly. TV requires `tv` and a
+       `common` package will not install on a Samsung TV; phone, IoT-Headed,
+       and Raspberry Pi targets use `common`. `mobile` / `wearable` profiles
+       are gone (use flutter-tizen 3.16.2 or older for Galaxy Watch).
+    4. **Pick the ABI** with `--target-arch {arm|arm64|x86|x64}` to match the
+       device CPU. Real TVs / RPi are `arm` or `arm64`; the Tizen 10.0 TV
+       emulator and the common 10.x emulator are `x64`; only TV 9.0 and older
+       images are `x86`. Read the arch with `sdb -s <id> capability | grep
+       cpu_arch` — **not** `sdb shell uname -m`, which the secured TV emulator
+       blocks (returns nothing).
     5. **Pick the certificate** with `--security-profile <name>` when the
-       active profile is wrong.
+       active profile is wrong. Distributor certs must register the DUID of
+       every device you side-load to.
     6. **Run** `flutter-tizen build tpk` with the chosen flags. The TPK lands
        in `build/tizen/tpk/`.
-    7. **Verify the artifact.** `tizen package -t tpk -- <path>` validates
-       the manifest; `unzip -l <tpk>` inspects the contents.
+    7. **Verify by installing** on the target: `sdb -s <id> install
+       build/tizen/tpk/<file>.tpk` must end with `key[end]   val[ok]`.
+       Inspect contents with `unzip -l <tpk>` and the manifest with
+       `unzip -p <tpk> tizen-manifest.xml`.
     8. **Diagnose signing failures.** `tizen security-profiles list` to
-       confirm the profile exists; re-create the distributor cert with the
-       device DUID registered if signing reports an unknown DUID.
+       confirm the profile exists; a `not authorized` install error means the
+       device DUID is missing from the distributor cert — re-issue and rebuild.
   resources:
     - https://github.com/flutter-tizen/flutter-tizen/wiki/Build-an-app
     - https://docs.tizen.org/application/tizen-studio/native-tools/manifest-text-editor
@@ -85,11 +92,11 @@
 
 - name: flutter-tizen-device
   description: Connect to and run Flutter apps on Tizen devices and emulators
-    using `sdb`, `flutter-tizen run`, and `sdb dlog`. Use when bringing up a
+    using `sdb` and `flutter-tizen run`. Use when bringing up a
     TV / RPi / emulator target, when `sdb devices` shows offline or
-    unauthorized, when filtering noisy device logs, or when attaching a
+    unauthorized, when reading app logs, or when attaching a
     debugger to a running app.
-  examplePrompt: "Connect my TV at 192.168.0.101 and tail Flutter console + engine logs only"
+  examplePrompt: "Connect my TV at 192.168.0.101, run the app, and read its logs"
   instructions: |
     1. **Enable Developer Mode on the device.** TV: Apps → enter `12345`,
        toggle Developer Mode, set host IP. Watch / RPi / IOT: enable in
@@ -102,9 +109,14 @@
        `emulator-26101`).
     4. **Run the app.** `flutter-tizen run -d <device-id>` for debug;
        `--release` and `--profile` are supported.
-    5. **Tail logs.** `sdb dlog 'ConsoleMessage:I' 'FlutterEngine:I' '*:S'`
-       isolates Flutter-only output. Drop the `*:S` suffix for unfiltered
-       output.
+    5. **Read logs from the foreground `flutter-tizen run` session.** It
+       streams Dart `print`/`debugPrint` and Flutter engine messages; add
+       `2>&1 | tee app.log` to capture. On Tizen TV targets `sdb` is locked
+       down (`sdb capability` shows `secure_protocol:enabled`,
+       `intershell_support:disabled`), so `sdb dlog` / `sdb shell` return
+       nothing — the `run` console is the only log channel that works there.
+       `sdb dlog` works only on the common emulator / RPi where `sdb shell`
+       is available.
     6. **Attach a debugger.** `flutter-tizen run` prints the Dart VM Service
        URL. Open it in DevTools, or `flutter-tizen attach -d <device-id>` to
        hot-reload into a running app.
@@ -130,20 +142,26 @@
        (`OrderedTraversalPolicy`, `ReadingOrderTraversalPolicy`,
        `WidgetOrderTraversalPolicy`). Without a group, the D-pad jumps
        unpredictably between rows / columns.
-    3. **Map remote keys to actions** with `Shortcuts` and `Actions`. The
-       Samsung TV remote sends standard `LogicalKeyboardKey.arrowUp/Down/
-       Left/Right`, `select`, and `escape`. Media keys map to
-       `LogicalKeyboardKey.mediaPlayPause`, `mediaTrackNext`, etc. Color
-       keys arrive as `f1`–`f4`.
+    3. **Map remote keys to actions** with `Shortcuts` and `Actions`. D-pad
+       arrives as `LogicalKeyboardKey.arrowUp/Down/Left/Right` (drives
+       traversal automatically); OK is `select` **and** `enter` (map both —
+       firmware varies); Back is `goBack` / `escape`. Color keys are
+       `colorF0Red`, `colorF1Green`, `colorF2Yellow`, `colorF3Blue` (not
+       `f1`–`f4`); media keys are `mediaPlay` / `mediaPause` /
+       `mediaTrackNext` / etc.
     4. **Show a focus highlight.** TVs sit ~3m away — invisible focus
        guarantees lost users. Use `FocusableActionDetector` with
        `onShowFocusHighlight`, or override the theme's focused state colors.
     5. **Handle Back explicitly.** `LogicalKeyboardKey.escape` from the
        remote should pop a route (`Navigator.maybePop`); without it, the
        device exits the app.
-    6. **Test with the physical remote, not a USB keyboard.** Some keys
-       (color, exit, channel up/down) behave differently or do not raise a
-       Flutter key event.
+    6. **Verify with the emulator's on-screen control panel or a paired host
+       keyboard** (arrows = D-pad, Enter = OK, Esc/Backspace = Back). There is
+       no sdb key-injection path on the TV emulator, and `sdb shell
+       input_keyevent` does not reach the Flutter embedder even on the common
+       emulator — do not rely on it. There is no `flutter-tizen logs` command;
+       watch key events from the foreground `flutter-tizen run` console (or
+       `flutter-tizen attach`).
   resources:
     - https://github.com/flutter-tizen/flutter-tizen/wiki/TV-app-development
     - https://docs.tizen.org/application/web/guides/tv/key-events
@@ -162,31 +180,40 @@
     plugin.
   examplePrompt: "Add location support to my app on Tizen, including the privilege declaration"
   instructions: |
-    1. **Look up the right plugin.** Check the
-       github.com/flutter-tizen/plugins index. Three classes exist:
-       endorsed `<name>_tizen` (federated companion to an upstream plugin),
-       unendorsed `<name>_tizen` (still works, but the user must add it
-       explicitly), and Tizen-exclusive (`tizen_app_control`,
-       `messageport_tizen`, `tizen_package_manager`, …).
-    2. **Add the dependency.** For endorsed plugins, depend on the
-       cross-platform package; the `_tizen` implementation is pulled in
-       automatically. For unendorsed or Tizen-exclusive plugins, add the
-       package directly to `pubspec.yaml`.
-    3. **Run `flutter-tizen pub get`** — using vanilla `flutter pub get`
-       will not register the Tizen platform interface.
-    4. **Declare required privileges in `tizen-manifest.xml`.** Each plugin
-       lists its required privileges in its README; copy them under
-       `<privileges>` (e.g. `http://tizen.org/privilege/location`,
-       `http://tizen.org/privilege/internet`,
-       `http://tizen.org/privilege/camera`).
-    5. **Request privacy-related privileges at runtime** by depending on both
-       `permission_handler` and `permission_handler_tizen`, then importing
-       `package:permission_handler/permission_handler.dart` in Dart.
-    6. **Rebuild the TPK.** Manifest changes do not hot-reload — the next
-       install must come from a fresh `flutter-tizen build tpk` /
-       `flutter-tizen run`.
-    7. **Verify on a real device.** Emulator behavior for some privileges
-       (location, sensor, Bluetooth) differs from real hardware.
+    1. **Look up the right plugin** in the github.com/flutter-tizen/plugins
+       index. Three classes exist: endorsed `<name>_tizen` (pulled in
+       automatically by its base plugin — **rare**; most upstream first-party
+       plugins are *not* endorsed), unendorsed `<name>_tizen` (the common
+       case — you must add it explicitly), and Tizen-exclusive
+       (`tizen_app_control`, `messageport_tizen`, `tizen_package_manager`,
+       `tizen_log`, …). Assume unendorsed unless you confirm endorsement in
+       the base plugin's `pubspec.yaml` (`flutter.plugin.platforms.tizen`).
+    2. **Add the dependency** with `flutter-tizen pub add <plugin>`. For
+       unendorsed federated plugins add **both** the base and the `_tizen`
+       sibling (e.g. `shared_preferences` *and* `shared_preferences_tizen`),
+       or every call throws `MissingPluginException`. Tizen-exclusive plugins
+       are added directly.
+    3. **Run `flutter-tizen pub get`** — vanilla `flutter pub get` will not
+       register the Tizen platform interface.
+    4. **Declare required privileges in `tizen/tizen-manifest.xml`.** Each
+       plugin lists them in its README; copy them under `<privileges>` (e.g.
+       `http://tizen.org/privilege/location`,
+       `http://tizen.org/privilege/internet`). Add a matching `<feature>`
+       for hardware-backed APIs.
+    5. **Request privacy privileges at runtime** by depending on both
+       `permission_handler` and `permission_handler_tizen` and importing
+       `package:permission_handler/permission_handler.dart`. The runtime
+       request returns `denied` instantly unless the matching `<privilege>`
+       is also in the manifest.
+    6. **Rebuild the TPK.** Manifest changes do not hot-reload — reinstall
+       from a fresh `flutter-tizen build tpk` / `flutter-tizen run`. When
+       swapping endorsed ↔ unendorsed, run `flutter-tizen clean` first.
+    7. **Verify at runtime from the foreground `flutter-tizen run` console**
+       (on TV targets `sdb` is locked down, so that console is the only log
+       channel). Wrap calls in `try` / `on PlatformException` and `debugPrint`
+       the `e.code` / `e.message` so a native `permission denied` surfaces.
+       Dart/FFI plugins (`shared_preferences_tizen`, `path_provider_tizen`)
+       ship no native `.so` — that is normal, not a packaging failure.
   resources:
     - https://github.com/flutter-tizen/plugins
     - https://github.com/flutter-tizen/plugins/tree/master/packages/permission_handler
@@ -205,44 +232,47 @@
   instructions: |
     1. **Scaffold the package.**
        ```
-       flutter-tizen create --template=plugin \
-           --platforms=tizen --tizen-language=cpp my_plugin_tizen
+       flutter-tizen create --platforms tizen --template plugin \
+           --tizen-language cpp --org com.example my_plugin_tizen
        ```
-       The C++ scaffold is the reusable default; use
-       `--tizen-language=csharp` only when the host app is C# and the
-       underlying API is .NET-only.
+       The C++ scaffold is the reusable default; use `--tizen-language csharp`
+       only when the host app is C# and the underlying API is .NET-only.
     2. **Find the Tizen Native API** in
        docs.tizen.org/application/native/api/<profile>/<version>/group/.
        Note the privileges and the `pkg-config` module the API belongs to
        (e.g. `capi-system-info`).
-    3. **Wire the C++ side** in `tizen/src/`. Implement
-       `OnMethodCall(const MethodCall&, std::unique_ptr<MethodResult>)`,
-       dispatch on `call.method_name()`, return `result->Success(...)` /
-       `result->Error(...)`.
-    4. **Link the Native module** in `tizen/project_def.prop`:
+    3. **Wire the C++ side** in `tizen/src/`. In `RegisterWithRegistrar`
+       create the `MethodChannel`, dispatch in the handler on
+       `call.method_name()`, return `result->Success(...)` /
+       `result->Error(...)` / `result->NotImplemented()`. `free()` any
+       `char *` a Tizen API returns after copying it into a `std::string`.
+    4. **Add native packages** in `tizen/project_def.prop`. The fresh
+       scaffold ships only:
        ```
-       APPNAME = my_plugin_tizen
        type = staticLib
-       USER_LIB_DIRS =
+       USER_SRCS += src/*.cc
        USER_INC_DIRS = inc src
-       USER_SRCS = src/my_plugin_tizen_plugin.cc
-       USER_PKGS = capi-system-info
-       USER_LIBS =
        ```
-       `capi-*` names are pkg-config modules and belong in `USER_PKGS`; use
-       `USER_LIBS` only for plain libraries that do not have pkg-config files.
-    5. **Declare privileges and features in `tizen-manifest.xml`** (under
-       `example/tizen/` for the example app). Include both `<privilege>`
-       and any `<feature>` requirements (e.g.
-       `http://tizen.org/feature/location`).
+       Add `USER_PKGS` yourself for `capi-*` / `dlog` / `vconf` pkg-config
+       modules (e.g. `USER_PKGS = capi-system-info`). `capi-*` go in
+       `USER_PKGS`, never `USER_LIBS` (wrong field fails at link with
+       `undefined reference`); `USER_LIBS` is only for plain libs / `sharedLib`
+       plugins.
+    5. **Declare privileges and features** in the example app's
+       `example/tizen/tizen-manifest.xml` (the scaffold ships none) and
+       document them in the README — the consumer app's manifest is what the
+       OS evaluates at runtime. Include `<feature>` selectors for hardware
+       APIs. See flutter-tizen-use-plugins for privilege categories.
     6. **Expose the Dart API** in `lib/my_plugin_tizen.dart` via a
        `MethodChannel('my_plugin_tizen')` whose name matches the C++ side.
     7. **Validate via the example app.** `cd example && flutter-tizen run
-       -d <device-id>` and exercise the API. Catch unexpected
-       `PlatformException`s by logging `e.code` and `e.message`.
-    8. **Add tests.** A `widget_test` mocking the method channel, plus an
-       `integration_test` that runs against the device for the
-       happy-path call.
+       -d <device-id>`, exercise each method, and watch the foreground `run`
+       console — bridge native results/errors to Dart (`debugPrint`,
+       `PlatformException`) because the template `LOGI` / `LOGE` dlog macros
+       are **not readable on the Samsung TV emulator** and never appear in the
+       `run` console.
+    8. **Add tests.** A `flutter_test` widget test mocking the method channel,
+       plus an `integration_test` on a real device for the happy-path call.
     9. **Document privileges and constraints** in the package README so
        consumers know what to add to their own `tizen-manifest.xml`.
   resources:
@@ -250,3 +280,45 @@
     - https://github.com/flutter-tizen/plugins
     - https://docs.tizen.org/application/native/api/wearable/latest/index.html
     - https://docs.flutter.dev/packages-and-plugins/developing-packages
+
+- name: flutter-tizen-plugin-regression-test
+  description: Run regression tests for flutter-tizen plugins after changes to
+    the flutter-tizen tool, embedder, or engine. Use when validating plugin
+    compatibility after a flutter-tizen update, or when running CI-style
+    plugin verification — runs example apps and integration tests on the TV
+    emulator, analyzes logs, and generates issue reports.
+  examplePrompt: "Run a regression test for connectivity_plus on the TV 9.0 emulator"
+  instructions: |
+    1. **Verify the environment.** `flutter-tizen doctor -v`, `sdb version`,
+       `tizen version`, and `tizen security-profiles list` must all pass, and
+       the `flutter-tizen/plugins` repo must be available locally. Persist
+       discovered paths to
+       `~/.config/flutter-tizen-regression-test/config.json`.
+    2. **Parse the user request** for device/emulator id, plugin name(s),
+       profile, build mode, and skip options. User-specified values always
+       win over defaults.
+    3. **Select the device.** Use the user-specified id; otherwise launch the
+       TV 9.0 emulator. Confirm with `sdb devices`.
+    4. **Resolve the plugin list.** Use the user-named plugin(s); otherwise
+       read `.github/recipe.yaml` and take the plugins whose profile list
+       contains `tv-9.0`. Skip plugins with empty arrays.
+    5. **Run each example app.** `cd packages/<plugin>/example &&
+       flutter-tizen -d <id> run --debug > example_run.log 2>&1`. Do **not**
+       use `sdb dlog` on the TV emulator — it is locked down
+       (`secure_protocol:enabled`) and returns nothing, so a grep over the
+       empty result silently reports a false PASS. The foreground `run`
+       session is the only working log channel.
+    6. **Analyze logs** for `F/`, `E/FlutterEngine`, `E/FlutterJNI`,
+       `SIGSEGV` / `SIGABRT`, `Exception`, and `Error:`.
+    7. **Run integration tests** when `example/test_driver/` and
+       `example/integration_test/` exist: `flutter-tizen drive
+       --driver=test_driver/integration_test.dart
+       --target=integration_test/<file>.dart -d <id> --debug`.
+    8. **Generate an issue report** per failing plugin and a summary across
+       all tested plugins, saved under
+       `~/.config/flutter-tizen-regression-test/reports/`.
+  resources:
+    - https://github.com/flutter-tizen/plugins
+    - https://github.com/flutter-tizen/flutter-tizen
+    - https://github.com/flutter-tizen/plugins/blob/master/.github/recipe.yaml
+    - https://docs.flutter.dev/testing/integration-tests
