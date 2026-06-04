@@ -14,6 +14,7 @@ Provides Tizen-specific skills. Use with [flutter/skills](https://github.com/flu
 | [flutter-tizen-tv-remote-input](skills/flutter-tizen-tv-remote-input/SKILL.md) | Handle D-pad focus and remote key input           |
 | [flutter-tizen-use-plugins](skills/flutter-tizen-use-plugins/SKILL.md)         | Use `*_tizen` plugins with privilege declarations |
 | [flutter-tizen-create-plugin](skills/flutter-tizen-create-plugin/SKILL.md)     | Create C++ native plugins with method channels    |
+| [flutter-tizen-plugin-regression-test](skills/flutter-tizen-plugin-regression-test/SKILL.md) | Run regression tests for flutter-tizen plugins |
 
 ## Install
 
