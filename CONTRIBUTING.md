@@ -2,7 +2,7 @@
 
 ## Status
 
-This repository is an MVP scaffolded as a companion to upstream [flutter/skills](https://github.com/flutter/skills). External contributions are not yet open while the initial skill set stabilises.
+This repository is an MVP scaffolded as a companion to [flutter/skills](https://github.com/flutter/skills). External contributions are not yet open while the initial skill set stabilises.
 
 If you find a bug, want to request a new skill, or want a Tizen workflow added or refined, please [file an issue](https://github.com/flutter-tizen/skills/issues).
 
@@ -10,7 +10,7 @@ If you find a bug, want to request a new skill, or want a Tizen workflow added o
 
 When filing an issue, include:
 
-1. Which language model you used (Gemini 3.x, Claude Sonnet 4.6 / Opus 4.7, GPT-5, …).
+1. Which language model you used (Gemini 3.x, Claude Sonnet 4.6 / Opus 4.8, GPT-5, …).
 2. Which agent harness you used (Claude Code, Gemini CLI, Antigravity, Cursor, Codex, …).
 3. Logs that show the prompt used and the steps the agent took — which skill it picked, which MCP tools / shell commands it ran, and the final result.
 
