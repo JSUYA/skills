@@ -48,4 +48,4 @@ dart run skills generate-skill --config ../resources/flutter_tizen_skills.yaml -
 
 ## License
 
-[MIT License](LICENSE)
+[BSD 3-Clause License](LICENSE)
