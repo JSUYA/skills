@@ -1,4 +1,4 @@
-name: skills_workspace
+name: flutter_tizen_skills_workspace
 publish_to: 'none'
 
 environment:
