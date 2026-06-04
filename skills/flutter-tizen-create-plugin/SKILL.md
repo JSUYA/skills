@@ -271,8 +271,8 @@ flutter-tizen -d <id> run --debug   # Dart print/debugPrint + PlatformException 
 
 The foreground `flutter-tizen run` console is the verification surface that works on **every** target, including TV. Bridge native state to the Dart layer so it shows there:
 
-- In `src/log.h` the template defines `LOG_TAG`; emit native logs with `LOGI(...)` / `LOGE(...)` for local inspection.
-- Return native results through the method channel and `debugPrint` them; throw a `PlatformException` on failure so the Dart side prints the code/message in the `run` console.
+- The template `src/log.h` `LOGI(...)` / `LOGE(...)` macros write to the **dlog buffer**. Readable with `sdb dlog` / `dlogutil` on targets where `sdb shell` is available (common emulator, Raspberry Pi), but **not on the Samsung TV emulator** (`secure_protocol:enabled`, no `sdb shell` / `dlogutil`), and dlog never appears in the `flutter-tizen run` console. Do not rely on dlog for verification on TV.
+- Return native results through the method channel and `debugPrint` them; throw a `PlatformException` on failure so the Dart side prints the code/message in the `run` console. This is the only native-state inspection path that works on every target, including the TV emulator.
 
 For unit tests on the Dart layer, mock `MethodChannel` via `TestDefaultBinaryMessengerBinding`:
 
