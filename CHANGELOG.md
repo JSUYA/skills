@@ -18,6 +18,5 @@ Initial release of the Flutter-Tizen agent skill set.
 
 - `tool/dart_skills_lint` — SKILL.md linter (vendored from flutter/skills).
 - `tool/generator` — SKILL.md generator driven by `resources/flutter_tizen_skills.yaml`.
-- `tool/dart_hooks` — `dart analyze` / `dart format` git hooks.
 
 Licensed under the [BSD 3-Clause License](LICENSE).
