@@ -1,4 +1,9 @@
+// Copyright (c) 2026, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 import 'package:yaml/yaml.dart';
+import '../cutoff_excerpt.dart';
 import '../models/analysis_severity.dart';
 import '../models/skill_context.dart';
 import '../models/skill_rule.dart';
@@ -38,8 +43,12 @@ class DescriptionLengthRule extends SkillRule {
           ruleId: name,
           severity: severity,
           file: _skillFileName,
-          message:
-              'Description field is too long. Maximum $maxDescriptionLength characters (see $_descriptionFieldUrl)',
+          message: buildLengthDiagnostic(
+            fieldName: 'Description',
+            value: description,
+            maxLength: maxDescriptionLength,
+            docUrl: _descriptionFieldUrl,
+          ),
         ),
       );
     }

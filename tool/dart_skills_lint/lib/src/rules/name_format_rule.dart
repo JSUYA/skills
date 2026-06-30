@@ -1,3 +1,7 @@
+// Copyright (c) 2026, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 import 'dart:io';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart';
@@ -41,61 +45,51 @@ class NameFormatRule extends SkillRule implements FixableRule {
       return errors; // Handled by required fields check
     }
 
-    final String suggestedName = _suggestName(skillName);
+    final String suggestion = suggestNormalizedName(skillName);
 
     if (skillName != skillName.toLowerCase()) {
       errors.add(
-        ValidationError(
-          ruleId: name,
-          severity: severity,
-          file: _skillFileName,
-          message:
-              'Frontmatter `name` "$skillName" must be lowercase. Suggested: "$suggestedName" (see $_nameFieldUrl)',
+        _buildNameFormatError(
+          'Frontmatter `name` "$skillName" must be lowercase. '
+          'Suggested: "$suggestion"',
         ),
       );
     }
 
     if (skillName.length > maxNameLength) {
       errors.add(
-        ValidationError(
-          ruleId: name,
-          severity: severity,
-          file: _skillFileName,
-          message: 'Skill name too long. Maximum $maxNameLength characters (see $_nameFieldUrl)',
+        _buildNameFormatError(
+          'Frontmatter `name` is ${skillName.length} characters; '
+          'maximum is $maxNameLength. '
+          'Shorten the `name:` field in SKILL.md.',
         ),
       );
     }
 
     if (!_validNameRegex.hasMatch(skillName)) {
       errors.add(
-        ValidationError(
-          ruleId: name,
-          severity: severity,
-          file: _skillFileName,
-          message:
-              'Frontmatter `name` "$skillName" contains invalid characters. Only lowercase letters, digits, and hyphens allowed. Suggested: "$suggestedName" (see $_nameFieldUrl)',
+        _buildNameFormatError(
+          'Frontmatter `name` "$skillName" contains invalid characters. '
+          'Only lowercase letters, digits, and hyphens are allowed. '
+          'Suggested: "$suggestion"',
         ),
       );
     }
 
     if (skillName.startsWith('-') || skillName.endsWith('-')) {
       errors.add(
-        ValidationError(
-          ruleId: name,
-          severity: severity,
-          file: _skillFileName,
-          message: 'Skill name cannot have leading or trailing hyphens (see $_nameFieldUrl)',
+        _buildNameFormatError(
+          'Frontmatter `name` "$skillName" has leading or trailing hyphens. '
+          'Suggested: "$suggestion"',
         ),
       );
     }
 
     if (skillName.contains('--')) {
       errors.add(
-        ValidationError(
-          ruleId: name,
-          severity: severity,
-          file: _skillFileName,
-          message: 'Skill name cannot have consecutive hyphens (see $_nameFieldUrl)',
+        _buildNameFormatError(
+          'Frontmatter `name` "$skillName" has consecutive hyphens. '
+          'Suggested: "$suggestion"',
         ),
       );
     }
@@ -103,17 +97,42 @@ class NameFormatRule extends SkillRule implements FixableRule {
     final String dirName = basename(context.directory.path);
     if (skillName != dirName) {
       errors.add(
-        ValidationError(
-          ruleId: name,
-          severity: severity,
-          file: _skillFileName,
-          message:
-              'Frontmatter `name` "$skillName" does not match the parent directory name "$dirName"; it must exactly match the parent directory name. Suggested: "$dirName" (see $_nameFieldUrl)',
+        _buildNameFormatError(
+          'Frontmatter `name` "$skillName" does not match the parent '
+          'directory name "$dirName". '
+          'Fix by either setting `name: $dirName` in SKILL.md '
+          'or renaming the directory from "$dirName" to "$skillName".',
         ),
       );
     }
 
     return errors;
+  }
+
+  ValidationError _buildNameFormatError(String message) => ValidationError(
+    ruleId: name,
+    severity: severity,
+    file: _skillFileName,
+    message: '$message (see $_nameFieldUrl)',
+  );
+
+  /// Returns a best-effort normalization of [input] that conforms to the
+  /// skill name format: lowercase, hyphens only, no consecutive/leading/
+  /// trailing hyphens, truncated to [maxNameLength].
+  ///
+  /// This is intentionally a *suggestion* — the author still picks the final
+  /// name. The output is not guaranteed to match a directory name.
+  @visibleForTesting
+  static String suggestNormalizedName(String input) {
+    String s = input.toLowerCase();
+    s = s.replaceAll(RegExp(r'[^a-z0-9\-]+'), '-');
+    s = s.replaceAll(RegExp(r'-+'), '-');
+    s = s.replaceAll(RegExp(r'^-+|-+$'), '');
+    if (s.length > maxNameLength) {
+      s = s.substring(0, maxNameLength);
+      s = s.replaceAll(RegExp(r'-+$'), '');
+    }
+    return s;
   }
 
   @override
@@ -166,14 +185,5 @@ class NameFormatRule extends SkillRule implements FixableRule {
   @visibleForTesting
   static YamlNode? getNameNode(YamlMap yaml) {
     return yaml.nodes['name'];
-  }
-
-  static String _suggestName(String skillName) {
-    final String normalized = skillName
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9-]+'), '-')
-        .replaceAll(RegExp(r'-+'), '-')
-        .replaceAll(RegExp(r'^-|-$'), '');
-    return normalized.isEmpty ? 'skill-name' : normalized;
   }
 }

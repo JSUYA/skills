@@ -1,3 +1,46 @@
+## 0.4.0
+
+- Fixed issue #166 by adding support for configuring individual skills via the `individual_skills:` key in `dart_skills_lint.yaml`, enabling path-specific rule severity mapping without relying on root directory scanning.
+- Native binaries for macOS arm64, macOS x64, Linux x64, and Linux
+  arm64 are now published to GitHub Releases. Install without the
+  Dart SDK via `curl -fsSL .../install.sh | bash`, or download the
+  tarball directly and verify its SHA256.
+- macOS binaries are not yet code-signed; clear the
+  quarantine flag with
+  `xattr -d com.apple.quarantine $(which dart_skills_lint)` on
+  first launch.
+- The `dart pub global activate dart_skills_lint` and
+  `dev_dependencies:` install paths are unchanged.
+
+## 0.3.1
+
+- `--fix` now writes fixes to disk; pair with `--dry-run`
+  (`--fix --dry-run`) to preview the proposed diff without writing.
+  The legacy `--fix-apply` flag still works but is deprecated and
+  emits a notice on stderr.
+- Running the CLI with no arguments and no `.claude/skills` or
+  `.agents/skills` directory present now prints a short onboarding
+  guide explaining how to point the linter at a skill or a skills
+  root.
+- `description-too-long` errors now report the actual character
+  count and show an excerpt with a `|HERE|` marker at the cutoff
+  so authors can see exactly where the text went over. The same
+  diagnostic shape is now used for the `compatibility` field's
+  500-character limit.
+- `invalid-skill-name` errors now disambiguate the frontmatter
+  `name:` field from the parent directory name, quote the offending
+  value, and suggest a normalized form. The directory-mismatch
+  error offers both directions of the fix (edit the field or
+  rename the directory).
+- `check-relative-paths` errors now include the resolved absolute
+  path and, when a near-miss filename exists in the same
+  directory, surface a `Did you mean "..."?` suggestion that
+  preserves the link's directory prefix.
+- New `example/` directory with reference `valid` and `invalid`
+  skill fixtures and a walkthrough.
+- New "Recipes" section in `README.md` with copy-pasteable GitHub
+  Actions and pre-commit hook integrations.
+
 ## 0.3.0
 
 - Exposed `ConfigParser.loadConfig()` API to load configuration files programmatically.
