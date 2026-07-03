@@ -1,3 +1,7 @@
+// Copyright (c) 2026, the Dart project authors.  Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+
 import 'dart:io';
 import 'package:path/path.dart';
 import '../fixable_rule.dart';
@@ -19,7 +23,6 @@ class AbsolutePathsRule extends SkillRule implements FixableRule {
   @override
   final AnalysisSeverity severity;
 
-  static final _markdownLinkRegex = RegExp(r'\[.*?\]\((.*?)\)');
   static const String _skillFileName = SkillContext.skillFileName;
 
   @override
@@ -27,13 +30,14 @@ class AbsolutePathsRule extends SkillRule implements FixableRule {
     final errors = <ValidationError>[];
 
     // Extract content after YAML frontmatter
-    final skillStartRegex = RegExp(r'^---\s*\n(.*?)\n---\s*\n', dotAll: true);
-    final RegExpMatch? match = skillStartRegex.firstMatch(context.rawContent);
+    final RegExpMatch? match = SkillContext.skillStartRegex.firstMatch(context.rawContent);
     final String markdownContent = match != null
         ? context.rawContent.substring(match.end)
         : context.rawContent;
 
-    for (final RegExpMatch linkMatch in _markdownLinkRegex.allMatches(markdownContent)) {
+    for (final RegExpMatch linkMatch in SkillContext.markdownLinkRegex.allMatches(
+      markdownContent,
+    )) {
       final String path = linkMatch.group(1)!;
       if (isAbsolute(path) || windows.isAbsolute(path)) {
         errors.add(
@@ -42,7 +46,9 @@ class AbsolutePathsRule extends SkillRule implements FixableRule {
             severity: severity,
             file: _skillFileName,
             message:
-                'Absolute filepath found in link: $path. Skills must use paths relative to SKILL.md so they remain portable across machines.',
+                'Absolute filepath found in link: $path. '
+                'Skills must use paths relative to SKILL.md so they remain '
+                'portable across machines.',
           ),
         );
       }
@@ -57,7 +63,7 @@ class AbsolutePathsRule extends SkillRule implements FixableRule {
       return currentContent;
     }
 
-    return currentContent.replaceAllMapped(_markdownLinkRegex, (match) {
+    return currentContent.replaceAllMapped(SkillContext.markdownLinkRegex, (match) {
       final String path = match.group(1)!;
       if (isAbsolute(path) || windows.isAbsolute(path)) {
         final file = File(path);
