@@ -2,7 +2,7 @@ name: skill_lint
 permissions: read-all
 
 # Validate every SKILL.md against the dart_skills_lint spec. Mirrors the
-# upstream flutter/skills `validate_skills` job. Runs on PR + main push +
+# upstream flutter/agent-plugins `validate_skills` job. Runs on PR + main push +
 # weekly schedule so dropped GitHub repo refs / dead manifests get caught.
 
 on:

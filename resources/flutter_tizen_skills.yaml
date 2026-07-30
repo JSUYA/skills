@@ -2,7 +2,7 @@
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-# Configuration file for the skill generator (vendored from flutter/skills).
+# Configuration file for the skill generator (vendored from flutter/agent-plugins).
 # Regenerate the SKILL.md files (from the repository root):
 #
 #   dart run tool/generator/bin/skills.dart generate-skill \

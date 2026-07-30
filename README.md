@@ -2,7 +2,7 @@
 
 AI agent skills for [flutter-tizen](https://github.com/flutter-tizen/flutter-tizen). This skill set, maintained by the Flutter-Tizen team, provides guidelines designed for common workflows in Flutter app development for Tizen.
 
-Provides Tizen-specific skills. Use with [flutter/skills](https://github.com/flutter/skills) for general Flutter development.
+Provides Tizen-specific skills. Use with [flutter/agent-plugins](https://github.com/flutter/agent-plugins) for general Flutter development.
 
 ## Skills
 
@@ -52,7 +52,7 @@ dart run tool/generator/bin/skills.dart generate-skill \
   --directory skills
 ```
 
-> **Note:** The `tool/` directory (skill generator and linter) is sourced from [flutter/skills](https://github.com/flutter/skills) and kept in sync with its upstream updates.
+> **Note:** The `tool/` directory (skill generator and linter) is sourced from [flutter/agent-plugins](https://github.com/flutter/agent-plugins) and kept in sync with its upstream updates.
 
 ## License
 

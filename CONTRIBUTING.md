@@ -2,7 +2,7 @@
 
 ## Status
 
-This repository is an MVP scaffolded as a companion to [flutter/skills](https://github.com/flutter/skills). External contributions are not yet open while the initial skill set stabilises.
+This repository is an MVP scaffolded as a companion to [flutter/agent-plugins](https://github.com/flutter/agent-plugins). External contributions are not yet open while the initial skill set stabilises.
 
 If you find a bug, want to request a new skill, or want a Tizen workflow added or refined, please [file an issue](https://github.com/flutter-tizen/skills/issues).
 
@@ -48,4 +48,4 @@ Skills are generated from `resources/flutter_tizen_skills.yaml` plus the doc URL
 
 ## Issue triage
 
-Maintainers triage incoming issues following the same conventions as upstream `flutter/skills`: untriaged issues get either closed with explanation or labelled `triaged` plus a priority (`P0`–`P3`). `P0` / `P1` issues are placed in a milestone.
+Maintainers triage incoming issues following the same conventions as upstream `flutter/agent-plugins`: untriaged issues get either closed with explanation or labelled `triaged` plus a priority (`P0`–`P3`). `P0` / `P1` issues are placed in a milestone.

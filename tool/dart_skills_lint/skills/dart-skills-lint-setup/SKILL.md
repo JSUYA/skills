@@ -25,7 +25,7 @@ Setup validation in your Dart project:
    dev_dependencies:
      dart_skills_lint:
        git:
-         url: https://github.com/flutter/skills.git
+         url: https://github.com/flutter/agent-plugins.git
          path: tool/dart_skills_lint
    ```
    **Note:** The test example below also requires `package:logging` and `package:test` to be added to your `dev_dependencies` if they are not already present.
