@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0
+
+- Package the existing skills as installable Claude Code, Codex, and Cursor plugins.
+- Bundle the Dart MCP server configuration.
+- Keep the universal `npx skills` installation path.
+
 ## 0.1.0
 
 Initial release of the Flutter-Tizen agent skill set.

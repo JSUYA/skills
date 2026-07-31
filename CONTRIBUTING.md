@@ -1,8 +1,8 @@
-# Contributing to Flutter-Tizen Skills
+# Contributing to Flutter-Tizen Agent Plugins
 
 ## Status
 
-This repository is an MVP scaffolded as a companion to [flutter/agent-plugins](https://github.com/flutter/agent-plugins). External contributions are not yet open while the initial skill set stabilises.
+This repository is a companion to [flutter/agent-plugins](https://github.com/flutter/agent-plugins). External contributions are not yet open while the plugin and skill set stabilise.
 
 If you find a bug, want to request a new skill, or want a Tizen workflow added or refined, please [file an issue](https://github.com/flutter-tizen/skills/issues).
 

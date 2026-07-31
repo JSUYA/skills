@@ -1,8 +1,8 @@
-# Flutter-Tizen Agent Skills
+# Flutter-Tizen Agent Plugins
 
-AI agent skills for [flutter-tizen](https://github.com/flutter-tizen/flutter-tizen). This skill set, maintained by the Flutter-Tizen team, provides guidelines designed for common workflows in Flutter app development for Tizen.
+Agent plugins for [flutter-tizen](https://github.com/flutter-tizen/flutter-tizen), maintained by the Flutter-Tizen team.
 
-Provides Tizen-specific skills. Use with [flutter/agent-plugins](https://github.com/flutter/agent-plugins) for general Flutter development.
+This repository bundles Tizen-specific skills with the Dart MCP server for Claude Code, Codex, and Cursor. The existing skills-only install remains available for other agents. Use with [flutter/agent-plugins](https://github.com/flutter/agent-plugins) for general Flutter development.
 
 ## Skills
 
@@ -21,23 +21,49 @@ Provides Tizen-specific skills. Use with [flutter/agent-plugins](https://github.
 | ------------------------------------------------------------------------------ | ------------------------------------------------- |
 | [flutter-tizen-plugin-regression-test](skills/flutter-tizen-plugin-regression-test/SKILL.md) | Run regression tests for flutter-tizen plugins |
 
-## Install
+## Installation
+
+Plugin installs require Dart 3.10.8 or newer on `PATH` for the bundled Dart MCP server.
+
+### Skills only
+
+The latest `skills` CLI requires Node.js 22.20.0 or newer.
 
 ```bash
 # Install all skills
-npx skills add flutter-tizen/skills --skill '*' --agent universal
+npx skills@1.5.21 add flutter-tizen/skills --skill '*' --agent universal --yes
 
 # Install specific skills
-npx skills add flutter-tizen/skills --skill flutter-tizen-setup,flutter-tizen-build-tpk
+npx skills@1.5.21 add flutter-tizen/skills --skill flutter-tizen-setup,flutter-tizen-build-tpk --agent universal --yes
 
 # Global install
-npx skills add flutter-tizen/skills --skill '*' --global
+npx skills@1.5.21 add flutter-tizen/skills --skill '*' --global --yes
 
 # Update
-npx skills update
+npx skills@1.5.21 update
 ```
 
 For manual install, copy or symlink `skills/flutter-tizen-*/` folders to your target directory.
+
+### Claude Code
+
+```bash
+claude plugin marketplace add flutter-tizen/skills
+claude plugin install flutter-tizen@flutter-tizen
+claude plugin marketplace list
+```
+
+### Codex
+
+```bash
+codex plugin marketplace add flutter-tizen/skills
+codex plugin add flutter-tizen@flutter-tizen
+codex plugin list --marketplace flutter-tizen
+```
+
+### Cursor
+
+Copy this repository to `~/.cursor/plugins/local/flutter-tizen`, then restart Cursor. Cursor discovers the bundled skills and `.mcp.json` automatically.
 
 ## Maintainers
 

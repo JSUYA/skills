@@ -1,0 +1,20 @@
+{
+  "name": "flutter-tizen",
+  "displayName": "Flutter-Tizen",
+  "version": "1.0.0",
+  "description": "Flutter-Tizen skills and Dart MCP tools for building, running, and debugging Flutter apps on Tizen.",
+  "author": {
+    "name": "Flutter-Tizen Team",
+    "url": "https://github.com/flutter-tizen"
+  },
+  "homepage": "https://github.com/flutter-tizen/skills",
+  "repository": "https://github.com/flutter-tizen/skills",
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "flutter",
+    "tizen",
+    "tv"
+  ],
+  "mcpServers": "./.mcp.json",
+  "skills": "./skills/"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "flutter-tizen",
+  "owner": {
+    "name": "Flutter-Tizen Team"
+  },
+  "description": "Claude marketplace for Flutter-Tizen development",
+  "plugins": [
+    {
+      "name": "flutter-tizen",
+      "description": "Flutter-Tizen skills and Dart MCP tools for building, running, and debugging Flutter apps on Tizen",
+      "category": "development",
+      "tags": [
+        "flutter",
+        "tizen",
+        "tv"
+      ],
+      "source": "./"
+    }
+  ]
+}

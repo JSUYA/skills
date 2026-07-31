@@ -6,5 +6,8 @@ pubspec.lock
 .vscode/
 *.iml
 .DS_Store
-/.agents/
+/.agents/*
+!/.agents/plugins/
+/.agents/plugins/*
+!/.agents/plugins/marketplace.json
 /skills-lock.json

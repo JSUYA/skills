@@ -1,0 +1,39 @@
+{
+  "name": "flutter-tizen",
+  "version": "1.0.0",
+  "description": "Flutter-Tizen skills and Dart MCP tools for building, running, and debugging Flutter apps on Tizen.",
+  "author": {
+    "name": "Flutter-Tizen Team",
+    "url": "https://github.com/flutter-tizen"
+  },
+  "homepage": "https://github.com/flutter-tizen/skills",
+  "repository": "https://github.com/flutter-tizen/skills",
+  "license": "BSD-3-Clause",
+  "keywords": [
+    "flutter",
+    "tizen",
+    "tv",
+    "codex",
+    "skills",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Flutter-Tizen",
+    "shortDescription": "Build and debug Flutter apps for Tizen.",
+    "longDescription": "Use Flutter-Tizen skills and Dart MCP tools to set up, build, run, and debug Flutter apps for Tizen devices and emulators.",
+    "developerName": "Flutter-Tizen Team",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Skills",
+      "MCP"
+    ],
+    "websiteURL": "https://github.com/flutter-tizen/flutter-tizen",
+    "defaultPrompt": [
+      "Set up Flutter-Tizen and verify the development environment.",
+      "Build and sign a TPK for a Samsung Tizen device.",
+      "Debug a Flutter-Tizen app on a TV or emulator."
+    ]
+  }
+}
