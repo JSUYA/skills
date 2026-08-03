@@ -10,30 +10,18 @@ TV_EMULATOR_ID="${TV_EMULATOR_ID:-emulator-26111}"
 OUTPUT_DIR="${OUTPUT_DIR:-$HOME/.config/flutter-tizen-regression-test}"
 CONFIG_FILE="$OUTPUT_DIR/config.json"
 
-# Testable plugins (from .github/recipe.yaml)
-TESTABLE_PLUGINS=(
-    "audioplayers"
-    "connectivity_plus"
-    "device_info_plus"
-    "flutter_secure_storage"
-    "flutter_inappwebview"
-    "flutter_tts"
-    "integration_test"
-    "keyboard_detection"
-    "messageport"
-    "package_info_plus"
-    "path_provider"
-    "shared_preferences"
-    "sqflite"
-    "tizen_app_manager"
-    "tizen_audio_manager"
-    "tizen_bundle"
-    "tizen_package_manager"
-    "tizen_rpc_port"
-    "tizen_window_manager"
-    "url_launcher"
-    "wakelock_plus"
-)
+# Testable plugins — read from the plugins repo's .github/recipe.yaml at run
+# time (see ../SKILL.md "Testable Plugins"); a hardcoded list goes stale as
+# plugins are added or excluded upstream.
+load_testable_plugins() {
+    mapfile -t TESTABLE_PLUGINS < <(
+        grep '\["tv-9.0"\]' "$PLUGINS_REPO/.github/recipe.yaml" | tr -d ' ' | cut -d: -f1
+    )
+    if [[ ${#TESTABLE_PLUGINS[@]} -eq 0 ]]; then
+        log_error "No tv-9.0 plugins found in $PLUGINS_REPO/.github/recipe.yaml"
+        return 1
+    fi
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -217,18 +205,13 @@ analyze_logs() {
     
     log_info "Analyzing logs for: $plugin_name"
     
-    # Check for fatal errors
-    local fatal_count=$(grep -c "^F/" "$log_file" 2>/dev/null || echo "0")
-    if [[ $fatal_count -gt 0 ]]; then
-        echo "FATAL errors: $fatal_count" >> "$issues_file"
-        grep "^F/" "$log_file" >> "$issues_file"
-    fi
-    
-    # Check for Flutter engine errors
-    local engine_error_count=$(grep -c "E/FlutterEngine\|E/FlutterJNI" "$log_file" 2>/dev/null || echo "0")
-    if [[ $engine_error_count -gt 0 ]]; then
-        echo "Flutter engine errors: $engine_error_count" >> "$issues_file"
-        grep "E/FlutterEngine\|E/FlutterJNI" "$log_file" >> "$issues_file"
+    # Check for Dart / Flutter framework errors. dlog/logcat-style prefixes
+    # (F/, E/FlutterEngine, E/FlutterJNI) never appear in the run console —
+    # grepping for them silently matches nothing and reports a false PASS.
+    local dart_error_count=$(grep -c "Unhandled exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" 2>/dev/null || echo "0")
+    if [[ $dart_error_count -gt 0 ]]; then
+        echo "Dart/framework errors: $dart_error_count" >> "$issues_file"
+        grep "Unhandled exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" >> "$issues_file"
     fi
     
     # Check for crashes
@@ -323,6 +306,7 @@ main() {
     launch_emulator || exit 1
     
     if [[ "$run_all" == true ]]; then
+        load_testable_plugins || exit 1
         log_info "Running regression tests for all plugins..."
         for plugin in "${TESTABLE_PLUGINS[@]}"; do
             log_info "Testing plugin: $plugin"

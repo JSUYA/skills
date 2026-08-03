@@ -59,33 +59,13 @@ On first run, the skill stores paths in `~/.config/flutter-tizen-regression-test
 
 ## Testable Plugins
 
-The skill reads `.github/recipe.yaml` to identify plugins testable on `tv-9.0`:
+Read `.github/recipe.yaml` in the plugins repository **at test time** to identify plugins testable on `tv-9.0`. The list changes as plugins are added or excluded upstream, so never rely on a cached or hardcoded copy:
 
-| Plugin | Profile |
-|---|---|
-| audioplayers | tv-9.0 |
-| connectivity_plus | tv-9.0 |
-| device_info_plus | tv-9.0 |
-| flutter_secure_storage | tv-9.0 |
-| flutter_inappwebview | tv-9.0 |
-| flutter_tts | tv-9.0 |
-| integration_test | tv-9.0 |
-| keyboard_detection | tv-9.0 |
-| messageport | tv-9.0 |
-| package_info_plus | tv-9.0 |
-| path_provider | tv-9.0 |
-| shared_preferences | tv-9.0 |
-| sqflite | tv-9.0 |
-| tizen_app_manager | tv-9.0 |
-| tizen_audio_manager | tv-9.0 |
-| tizen_bundle | tv-9.0 |
-| tizen_package_manager | tv-9.0 |
-| tizen_rpc_port | tv-9.0 |
-| tizen_window_manager | tv-9.0 |
-| url_launcher | tv-9.0 |
-| wakelock_plus | tv-9.0 |
+```sh
+grep '\["tv-9.0"\]' <pluginsPath>/.github/recipe.yaml | tr -d ' ' | cut -d: -f1
+```
 
-Plugins with empty arrays or special conditions are skipped.
+Plugins mapped to an empty array (`[]`) or special conditions are skipped.
 
 ## User Input Priority
 
@@ -212,30 +192,32 @@ Note: `flutter-tizen run` automatically detects the device profile and architect
 > sdb -s <device-id> capability | grep -E 'secure_protocol|intershell_support'
 > ```
 
-Capture logs from the **foreground `flutter-tizen run` session** instead — the only log channel that works on the TV emulator. It streams Dart `print`/`debugPrint` and Flutter engine messages, so redirect that process to a file:
+Capture logs from the **foreground `flutter-tizen run` session** instead — the only log channel that works on the TV emulator. It streams Dart `print`/`debugPrint` and Flutter engine messages, so redirect that process to a file.
+
+`flutter-tizen run` stays attached until you press `q`, so an unattended or batch run must bound it — either background it and `kill` after a grace period (as `example/regression_test_runner.sh` does), or wrap it in `timeout` with a generous limit for the first build:
 
 ```sh
-flutter-tizen -d <device-id> run --debug > example_run.log 2>&1
+timeout 300 flutter-tizen -d <device-id> run --debug > example_run.log 2>&1
 ```
 
 ### Success Criteria
 
 The example app is considered successful if:
 - App launches without crash
-- No `FATAL` or `E/FlutterEngine` messages in logs
-- App UI is responsive (no ANR - Application Not Responding)
-- Hot reload works (press `r` in terminal)
+- No unhandled exception or native crash in the captured run-console log (see Failure Detection below)
+- Interactive sessions only: hot reload works (press `r` in the terminal). Skip this check when output is redirected to a file — the session is not interactive.
 
 ### Failure Detection
 
-Watch for these patterns in logs:
-- `F/` (Fatal)
-- `E/FlutterEngine`
-- `E/FlutterJNI`
-- `SIGSEGV` or `SIGABRT`
+Watch for these patterns in the `flutter-tizen run` console output:
+- `Unhandled exception:` (uncaught Dart exception)
+- `EXCEPTION CAUGHT BY` (Flutter framework error banner)
+- `PlatformException`
+- `SIGSEGV` or `SIGABRT` (native crash)
 - `Failed to`
-- `Exception`
 - `Error:`
+
+Do **not** grep for dlog/logcat-style prefixes (`F/`, `E/FlutterEngine`, `E/FlutterJNI`) — those are Android/dlog formats that never appear in the run console, so they silently match nothing and report a false PASS.
 
 ## Running Integration Tests
 
@@ -285,14 +267,11 @@ Capture test output and check for:
 ### Example App Log Analysis
 
 ```sh
-# Check for fatal errors
-grep -E "^F/" example_run.log
+# Check for Dart / framework errors
+grep -E "Unhandled exception|EXCEPTION CAUGHT BY|PlatformException" example_run.log
 
-# Check for Flutter engine errors
-grep -E "E/FlutterEngine|E/FlutterJNI" example_run.log
-
-# Check for exceptions
-grep -iE "exception|error:|failed" example_run.log
+# Check for generic failures
+grep -iE "error:|failed" example_run.log
 
 # Check for crashes
 grep -iE "SIGSEGV|SIGABRT|crash" example_run.log
@@ -322,7 +301,7 @@ When issues are detected, generate a report:
 
 **Date:** <timestamp>
 **Plugin:** <plugin_name>
-**Device:** TV 9.0 Emulator (<device-id>)
+**Device:** <device-id> (<profile>)
 **flutter-tizen version:** <version>
 
 ## Summary

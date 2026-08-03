@@ -38,24 +38,16 @@ analyze_example_logs() {
     
     log_section "Example App Log Analysis: $log_file"
     
-    # Check for fatal errors (F/ prefix)
-    log_info "Checking for fatal errors (F/)..."
-    local fatal_count=$(grep -c "^F/" "$log_file" 2>/dev/null || echo "0")
-    if [[ $fatal_count -gt 0 ]]; then
-        log_error "Found $fatal_count fatal error(s):"
-        grep "^F/" "$log_file" | head -10
+    # Check for Dart / Flutter framework errors. dlog/logcat-style prefixes
+    # (F/, E/FlutterEngine, E/FlutterJNI) never appear in the run console —
+    # grepping for them silently matches nothing and reports a false PASS.
+    log_info "Checking for Dart/framework errors..."
+    local dart_error_count=$(grep -c "Unhandled exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" 2>/dev/null || echo "0")
+    if [[ $dart_error_count -gt 0 ]]; then
+        log_error "Found $dart_error_count Dart/framework error(s):"
+        grep "Unhandled exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" | head -10
     else
-        log_info "No fatal errors found"
-    fi
-    
-    # Check for Flutter engine errors
-    log_info "Checking for Flutter engine errors..."
-    local engine_errors=$(grep -c "E/FlutterEngine\|E/FlutterJNI" "$log_file" 2>/dev/null || echo "0")
-    if [[ $engine_errors -gt 0 ]]; then
-        log_error "Found $engine_errors Flutter engine error(s):"
-        grep "E/FlutterEngine\|E/FlutterJNI" "$log_file" | head -10
-    else
-        log_info "No Flutter engine errors found"
+        log_info "No Dart/framework errors found"
     fi
     
     # Check for crashes (SIGSEGV, SIGABRT)
@@ -88,15 +80,6 @@ analyze_example_logs() {
         log_info "No 'Failed to' patterns found"
     fi
     
-    # Check for ANR (Application Not Responding)
-    log_info "Checking for ANR indicators..."
-    local anr_count=$(grep -ci "ANR\|not responding\|timeout" "$log_file" 2>/dev/null || echo "0")
-    if [[ $anr_count -gt 0 ]]; then
-        log_warn "Found $anr_count ANR indicator(s):"
-        grep -i "ANR\|not responding\|timeout" "$log_file" | head -10
-    else
-        log_info "No ANR indicators found"
-    fi
 }
 
 # Analyze integration test logs
