@@ -8,6 +8,8 @@ metadata:
 ---
 # Flutter-Tizen Plugin Regression Testing
 
+> Bundled example: [example/](example/README.md) — `regression_test_runner.sh` (environment check, emulator launch, example run, log capture) and `log_analysis.sh`.
+
 ## Contents
 - [Concepts](#concepts)
 - [Prerequisites](#prerequisites)

@@ -8,6 +8,8 @@ metadata:
 ---
 # Wiring the Samsung TV remote into a Flutter-Tizen app
 
+> Bundled example: [example/](example/README.md) — `remote_button.dart` (focusable button with highlight and color-key shortcut) and `home_grid.dart` (D-pad grid with ordered traversal and autofocus).
+
 ## Why this is different from mobile
 
 A Tizen TV has no touch surface; every interaction is a key event. Flutter's gesture-based widgets (`InkWell`, `GestureDetector` with only `onTap`) do not react to the OK button unless you explicitly route key events into them via `Focus` and `Shortcuts`/`Actions`.

@@ -8,6 +8,8 @@ metadata:
 ---
 # Creating a Tizen Flutter plugin
 
+> Bundled example: [example/](example/README.md) — a complete `foo_tizen` plugin wrapping `app_get_data_path()`: Dart API, C++ plugin, `project_def.prop`, and manifest snippet.
+
 ## Decide: C++, C#, or Dart FFI
 
 | Language | When to pick it | When not to |

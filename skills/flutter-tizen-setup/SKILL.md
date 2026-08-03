@@ -8,6 +8,8 @@ metadata:
 ---
 # Setting up flutter-tizen
 
+> Bundled example: [example/](example/README.md) — `setup.sh`, a non-destructive driver script that walks a fresh host through PATH wiring, doctor, certificate check, and a smoke build.
+
 ## Prerequisites
 
 Confirm the host environment before installing anything:

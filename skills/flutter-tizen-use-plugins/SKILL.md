@@ -8,6 +8,8 @@ metadata:
 ---
 # Selecting and integrating Tizen Flutter plugins
 
+> Bundled example: [example/](example/README.md) — wiring `geolocator` on Tizen end to end: pubspec and manifest snippets plus the runtime permission request.
+
 ## How Tizen plugins are distributed
 
 Three layouts you will encounter:

@@ -8,6 +8,8 @@ metadata:
 ---
 # Building Tizen TPKs from Flutter apps
 
+> Bundled example: [example/](example/README.md) — `build_examples.sh` covering the documented profile/arch/mode combinations, plus a per-target `tizen-manifest` snippet.
+
 ## Background
 
 `flutter-tizen build tpk` compiles the Flutter app, links it against the Tizen embedder, and packs the result as a `.tpk`. Output lands at:

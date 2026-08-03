@@ -8,6 +8,8 @@ metadata:
 ---
 # Connecting, running, and logging Tizen targets
 
+> Bundled example: [example/](example/README.md) — `device_session.sh`, an end-to-end connect → verify → run session that prints the VM Service URL from the run console.
+
 ## Concepts
 
 `sdb` (Samsung Debug Bridge) is Tizen's equivalent of `adb`. `flutter-tizen` talks to devices exclusively through `sdb`, so anything that breaks `sdb devices` breaks every flutter-tizen command. A few rules:
