@@ -280,7 +280,8 @@ For unit tests on the Dart layer, mock `MethodChannel` via `TestDefaultBinaryMes
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('foo_tizen');
-  channel.setMockMethodCallHandler((call) async {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) async {
     if (call.method == 'getDataPath') return '/opt/usr/apps/com.example.demo/data/';
     return null;
   });
