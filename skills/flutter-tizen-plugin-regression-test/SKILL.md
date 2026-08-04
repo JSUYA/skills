@@ -210,7 +210,7 @@ The example app is considered successful if:
 ### Failure Detection
 
 Watch for these patterns in the `flutter-tizen run` console output:
-- `Unhandled exception:` (uncaught Dart exception)
+- `Unhandled Exception:` (uncaught Dart exception — the Flutter engine logs a capital `E`, the bare Dart VM lowercase, so match case-insensitively)
 - `EXCEPTION CAUGHT BY` (Flutter framework error banner)
 - `PlatformException`
 - `SIGSEGV` or `SIGABRT` (native crash)
@@ -268,7 +268,7 @@ Capture test output and check for:
 
 ```sh
 # Check for Dart / framework errors
-grep -E "Unhandled exception|EXCEPTION CAUGHT BY|PlatformException" example_run.log
+grep -iE "Unhandled Exception|EXCEPTION CAUGHT BY|PlatformException" example_run.log
 
 # Check for generic failures
 grep -iE "error:|failed" example_run.log

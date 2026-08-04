@@ -208,10 +208,12 @@ analyze_logs() {
     # Check for Dart / Flutter framework errors. dlog/logcat-style prefixes
     # (F/, E/FlutterEngine, E/FlutterJNI) never appear in the run console —
     # grepping for them silently matches nothing and reports a false PASS.
-    local dart_error_count=$(grep -c "Unhandled exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" 2>/dev/null || echo "0")
+    # Case-insensitive: the engine logs "Unhandled Exception:", the bare VM
+    # "Unhandled exception:".
+    local dart_error_count=$(grep -ci "Unhandled Exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" 2>/dev/null || echo "0")
     if [[ $dart_error_count -gt 0 ]]; then
         echo "Dart/framework errors: $dart_error_count" >> "$issues_file"
-        grep "Unhandled exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" >> "$issues_file"
+        grep -i "Unhandled Exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" >> "$issues_file"
     fi
     
     # Check for crashes

@@ -303,13 +303,17 @@
        read `.github/recipe.yaml` and take the plugins whose profile list
        contains `tv-9.0`. Skip plugins with empty arrays.
     5. **Run each example app.** `cd packages/<plugin>/example &&
-       flutter-tizen -d <id> run --debug > example_run.log 2>&1`. Do **not**
-       use `sdb dlog` on the TV emulator — it is locked down
-       (`secure_protocol:enabled`) and returns nothing, so a grep over the
-       empty result silently reports a false PASS. The foreground `run`
-       session is the only working log channel.
-    6. **Analyze logs** for `F/`, `E/FlutterEngine`, `E/FlutterJNI`,
-       `SIGSEGV` / `SIGABRT`, `Exception`, and `Error:`.
+       timeout 300 flutter-tizen -d <id> run --debug > example_run.log 2>&1`
+       (`run` stays attached until `q`, so unattended runs must bound it —
+       `timeout` or background + kill). Do **not** use `sdb dlog` on the TV
+       emulator — it is locked down (`secure_protocol:enabled`) and returns
+       nothing, so a grep over the empty result silently reports a false
+       PASS. The foreground `run` session is the only working log channel.
+    6. **Analyze logs** case-insensitively for `Unhandled Exception:`,
+       `EXCEPTION CAUGHT BY`, `PlatformException`, `SIGSEGV` / `SIGABRT`,
+       `Failed to`, and `Error:`. Do **not** grep for dlog/logcat prefixes
+       (`F/`, `E/FlutterEngine`, `E/FlutterJNI`) — they never appear in the
+       run console, so they silently match nothing and report a false PASS.
     7. **Run integration tests** when `example/test_driver/` and
        `example/integration_test/` exist: `flutter-tizen drive
        --driver=test_driver/integration_test.dart
