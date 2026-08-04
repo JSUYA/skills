@@ -260,6 +260,7 @@ Plugin package manifests are *metadata only* when present — the host app is wh
 - [ ] **Step 7: Define the Dart API** in `lib/<plugin>.dart` and the method-channel layer in `lib/<plugin>_method_channel.dart`.
 - [ ] **Step 8: Build the example app** for the target profile, install, and exercise every Dart method while watching the foreground `flutter-tizen run` console.
 - [ ] **Step 9: Add `flutter_test` widget tests** at minimum; integration tests on a real device if the API depends on Tizen runtime state.
+- [ ] **Step 10: Feedback Loop.** Link errors → fix `project_def.prop` ([Pitfalls](#pitfalls)); runtime `PlatformException` → re-check privileges; re-run the example until every method verifies in the run console.
 
 ## Testing the plugin
 

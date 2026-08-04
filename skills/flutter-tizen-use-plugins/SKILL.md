@@ -143,6 +143,7 @@ This call **does not work** without the matching `<privilege>` line in `tizen-ma
 - [ ] **Step 6: For privacy privileges**, add a runtime request flow via `permission_handler` (or the plugin's own permission API).
 - [ ] **Step 7: Build + install** on the actual target profile. Privilege failures are profile-specific — e.g. some `tv` profiles silently drop privileges that work on `common`.
 - [ ] **Step 8: Verify at runtime** by exercising the plugin code path and watching the foreground `flutter-tizen run` console for the call result or a `PlatformException` (e.g. `permission denied`).
+- [ ] **Step 9: Feedback Loop.** `MissingPluginException` → add the `_tizen` sibling and `flutter-tizen clean`; `permission denied` → re-check manifest privilege and runtime request ([Pitfalls](#pitfalls)); re-run until the call succeeds.
 
 ## Verifying the plugin works
 

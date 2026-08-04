@@ -125,6 +125,7 @@ Snap-back patterns (focus must stop at the last item in a row, not wrap) are imp
 - [ ] **Step 6: Wire media keys**, but only on screens that own playback. Never swallow `audioVolume*`.
 - [ ] **Step 7: Verify focus visibility.** The focused widget must be unambiguous from 3 m away.
 - [ ] **Step 8: Drive the TV emulator** end-to-end with the remote panel: every reachable screen has a focused widget on entry; every reachable widget can be focused; OK invokes; Back pops.
+- [ ] **Step 9: Feedback Loop.** A screen where focus dies or OK does nothing → match the widget against [Pitfalls](#pitfalls) → fix → re-drive that screen until every widget focuses and activates.
 
 ## Verifying on a TV / emulator
 

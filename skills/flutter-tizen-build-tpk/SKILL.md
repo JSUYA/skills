@@ -85,6 +85,7 @@ Copy this checklist:
    ```
    The output must end with `key[end]   val[ok]`. Anything else means signing or profile mismatch.
 - [ ] **Step 7: Capture symbol files** (release builds) into version control or artifact storage — without them, future crash reports are unreadable.
+- [ ] **Step 8: Feedback Loop.** Install output not `key[end]   val[ok]` → match the error in [Common failures](#common-failures) → rebuild → re-install until ok.
 
 ## Inspecting the output
 

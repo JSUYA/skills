@@ -102,6 +102,7 @@ Copy this checklist and tick items as completed:
 - [ ] **Step 6: Plug in a device or launch an emulator**, then check `sdb devices` shows it as `device`.
 - [ ] **Step 7: Run `flutter-tizen doctor -v`** and resolve every red item before continuing to any build skill.
 - [ ] **Step 8: Smoke build.** `flutter-tizen create demo && cd demo && flutter-tizen build tpk --debug --device-profile common` must succeed end-to-end.
+- [ ] **Step 9: Feedback Loop.** Any red `doctor` item or failed smoke build → fix via [Troubleshooting](#troubleshooting) → re-run the failing command until clean.
 
 ## Troubleshooting
 

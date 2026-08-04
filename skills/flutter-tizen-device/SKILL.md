@@ -114,6 +114,7 @@ For VS Code, the bundled `flutter-tizen: Attach (project)` configuration automat
 - [ ] **Step 4: Reproduce the issue / exercise the feature.** Watch the `run` console; use `r` for hot reload as needed. To keep a copy, re-run with `2>&1 | tee app.log`.
 - [ ] **Step 5: If debugging an externally-launched app**, attach with `flutter-tizen -d <id> attach --debug-url <url>` (start it via `flutter-tizen run` so the URL is printed).
 - [ ] **Step 6: Detach cleanly** with `q` or `Ctrl-C`.
+- [ ] **Step 7: Feedback Loop.** Any step fails → match the symptom in [Common failures](#common-failures) → apply the fix → re-run from the failing step.
 
 ## Common failures
 
