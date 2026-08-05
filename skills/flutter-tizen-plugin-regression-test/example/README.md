@@ -5,7 +5,7 @@ End-to-end regression testing for flutter-tizen plugins on TV emulator.
 ## Files
 
 - `regression_test_runner.sh` — driver script: environment check, emulator launch, example app execution, log capture.
-- `log_analysis.sh` — log analysis script: filter fatal errors, Flutter engine errors, exceptions, and crashes.
+- `log_analysis.sh` — log analysis script: filter unhandled exceptions, Flutter framework errors, and native crashes from the captured run-console log.
 
 ## Scenario
 
