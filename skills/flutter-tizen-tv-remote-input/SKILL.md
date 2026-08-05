@@ -18,7 +18,7 @@ Three Flutter primitives carry the load:
 - `FocusTraversalGroup` + `FocusTraversalPolicy` — control how D-pad arrows move focus.
 - `Shortcuts` + `Actions` — map a `LogicalKeySet` (or platform key code) to a callable `Intent`.
 
-Treat the OK button as `LogicalKeyboardKey.select` (alias for `enter`); treat Back as `LogicalKeyboardKey.goBack` (alias for `escape` on Tizen).
+Treat the OK button as `LogicalKeyboardKey.select` **or** `enter` — they are distinct logical keys and firmware varies by model, so map both. Treat Back as `LogicalKeyboardKey.goBack`, and map `escape` alongside it for the same reason.
 
 ## Tizen TV remote key codes
 
@@ -151,7 +151,7 @@ For sanity-checking from inside Flutter, drop a temporary listener:
 
 ```dart
 Focus(
-  onKey: (node, event) {
+  onKeyEvent: (node, event) {
     debugPrint('key: ${event.logicalKey.debugName} (${event.runtimeType})');
     return KeyEventResult.ignored;
   },
