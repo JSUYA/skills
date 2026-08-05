@@ -14,11 +14,20 @@ CONFIG_FILE="$OUTPUT_DIR/config.json"
 # time (see ../SKILL.md "Testable Plugins"); a hardcoded list goes stale as
 # plugins are added or excluded upstream.
 load_testable_plugins() {
-    mapfile -t TESTABLE_PLUGINS < <(
-        grep '\["tv-9.0"\]' "$PLUGINS_REPO/.github/recipe.yaml" | tr -d ' ' | cut -d: -f1
-    )
+    local recipe_file="$PLUGINS_REPO/.github/recipe.yaml"
+    if [[ ! -f "$recipe_file" ]]; then
+        log_error "Could not find recipe.yaml at: $recipe_file"
+        log_error "Please verify your PLUGINS_REPO env variable or the --plugins-repo argument."
+        return 1
+    fi
+    # mapfile requires Bash 4+; macOS ships Bash 3.2, so build the array with
+    # a portable read loop instead.
+    TESTABLE_PLUGINS=()
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && TESTABLE_PLUGINS+=("$line")
+    done < <(grep -E '\[[^]]*"tv-9.0"[^]]*\]' "$recipe_file" | tr -d ' ' | cut -d: -f1)
     if [[ ${#TESTABLE_PLUGINS[@]} -eq 0 ]]; then
-        log_error "No tv-9.0 plugins found in $PLUGINS_REPO/.github/recipe.yaml"
+        log_error "No tv-9.0 plugins found in $recipe_file"
         return 1
     fi
 }

@@ -62,7 +62,7 @@ On first run, the skill stores paths in `~/.config/flutter-tizen-regression-test
 Read `.github/recipe.yaml` in the plugins repository **at test time** to identify plugins testable on `tv-9.0`. The list changes as plugins are added or excluded upstream, so never rely on a cached or hardcoded copy:
 
 ```sh
-grep '\["tv-9.0"\]' <pluginsPath>/.github/recipe.yaml | tr -d ' ' | cut -d: -f1
+grep -E '\[[^]]*"tv-9.0"[^]]*\]' <pluginsPath>/.github/recipe.yaml | tr -d ' ' | cut -d: -f1
 ```
 
 Plugins mapped to an empty array (`[]`) or special conditions are skipped.
