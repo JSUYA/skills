@@ -186,8 +186,14 @@
        plugins are *not* endorsed), unendorsed `<name>_tizen` (the common
        case — you must add it explicitly), and Tizen-exclusive
        (`tizen_app_control`, `messageport_tizen`, `tizen_package_manager`,
-       `tizen_log`, …). Assume unendorsed unless you confirm endorsement in
-       the base plugin's `pubspec.yaml` (`flutter.plugin.platforms.tizen`).
+       `tizen_log`, `tizen_notification`, `tizen_app_manager`,
+       `tizen_bundle`, …). Name only packages that exist in that repo —
+       there is no `vibration_tizen`, `flutter_local_notifications_tizen`,
+       `tizen_system_info`, `audio_session_tizen`, or `app_settings_tizen`;
+       system info comes from `device_info_plus` + `device_info_plus_tizen`
+       and notifications from `tizen_notification`. Assume unendorsed unless
+       you confirm endorsement in the base plugin's `pubspec.yaml`
+       (`flutter.plugin.platforms.tizen`).
     2. **Add the dependency** with `flutter-tizen pub add <plugin>`. For
        unendorsed federated plugins add **both** the base and the `_tizen`
        sibling (e.g. `shared_preferences` *and* `shared_preferences_tizen`),
@@ -214,9 +220,14 @@
        the `e.code` / `e.message` so a native `permission denied` surfaces.
        Dart/FFI plugins (`shared_preferences_tizen`, `path_provider_tizen`)
        ship no native `.so` — that is normal, not a packaging failure.
+
+    When documenting `messageport_tizen`, the receive callback typedef is
+    `void Function(dynamic message, [RemotePort? remotePort])` — a sample
+    lambda with a `Map`-typed required second parameter does not compile.
   resources:
     - https://github.com/flutter-tizen/plugins
     - https://github.com/flutter-tizen/plugins/tree/master/packages/permission_handler
+    - https://github.com/flutter-tizen/plugins/blob/master/packages/messageport/lib/messageport_tizen.dart
     - https://docs.tizen.org/application/native/guides/security/privilege-list
     - https://docs.tizen.org/application/dotnet/get-started/manifest
 

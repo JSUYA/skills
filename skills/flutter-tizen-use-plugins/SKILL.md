@@ -14,7 +14,7 @@ Three layouts you will encounter:
 
 1. **Endorsed federated plugin.** The base plugin lists its `*_tizen` sibling as an explicit dep, so adding only the base plugin pulls in Tizen support automatically. **In practice this is rare** — upstream first-party plugins (Google's `shared_preferences`, `url_launcher`, …) do **not** list a Tizen implementation, so they are *not* endorsed. Verified: `flutter-tizen pub add shared_preferences` (and `url_launcher`) prints `<plugin>_tizen is available on pub.dev. Did you forget to add to pubspec.yaml?` and does **not** pull the Tizen package. Assume unendorsed unless you confirm otherwise.
 2. **Unendorsed federated plugin** (the common case). The base plugin does not know about Tizen. You must list both the base *and* the `*_tizen` sibling in `pubspec.yaml` for Tizen builds to use the Tizen implementation — e.g. `shared_preferences` **and** `shared_preferences_tizen`.
-3. **Tizen-exclusive plugin.** Single package, no cross-platform parent (`tizen_app_control`, `messageport_tizen`, `tizen_package_manager`, `tizen_log`, `audio_session_tizen`, `app_settings_tizen`, …). Use directly. **Caveat for `tizen_log`:** it writes to the dlog buffer, readable with `sdb dlog` / `dlogutil` only on targets where `sdb shell` is available (common emulator, Raspberry Pi). On the Samsung TV emulator dlog is **not readable** (`secure_protocol:enabled`, no `sdb shell` / `dlogutil`), so use Dart-side `print` / `debugPrint` in the `flutter-tizen run` console for TV verification instead.
+3. **Tizen-exclusive plugin.** Single package, no cross-platform parent (`tizen_app_control`, `messageport_tizen`, `tizen_package_manager`, `tizen_log`, `tizen_app_manager`, `tizen_bundle`, …). Use directly. **Caveat for `tizen_log`:** it writes to the dlog buffer, readable with `sdb dlog` / `dlogutil` only on targets where `sdb shell` is available (common emulator, Raspberry Pi). On the Samsung TV emulator dlog is **not readable** (`secure_protocol:enabled`, no `sdb shell` / `dlogutil`), so use Dart-side `print` / `debugPrint` in the `flutter-tizen run` console for TV verification instead.
 
 Samsung publishes maintained packages under https://github.com/flutter-tizen/plugins. Treat this repo as the source of truth for whether a Tizen variant exists.
 
@@ -29,7 +29,7 @@ Decision flow:
    - App-to-app intents / deep links → `tizen_app_control`.
    - In-process IPC between a UI app and a service app → `messageport_tizen`.
    - Privacy-privileged APIs (location, camera, mic, storage) → `permission_handler_tizen` plus the right `<privilege>` entry.
-   - System info / device capabilities → `tizen_system_info` or a small native plugin.
+   - System info / device capabilities → `device_info_plus` + `device_info_plus_tizen`, or a small native plugin.
 5. If none of the above fits, escalate to [flutter-tizen-create-plugin](../flutter-tizen-create-plugin/SKILL.md).
 
 Catalog of commonly-used Tizen plugins:
@@ -42,12 +42,11 @@ Catalog of commonly-used Tizen plugins:
 | WebView | `webview_flutter_tizen` | Backed by Tizen EWK |
 | Connectivity status | `connectivity_plus_tizen` | Unendorsed; list both packages |
 | Battery info | `battery_plus_tizen` | Unendorsed |
-| Vibration | `vibration_tizen` | Requires `haptic` privilege |
 | URL launcher | `url_launcher_tizen` | Unendorsed — list both packages (verified) |
 | Send / receive Tizen app-control intent | `tizen_app_control` | Tizen-exclusive |
 | Cross-app messaging (UI ↔ service) | `messageport_tizen` | Tizen-exclusive |
 | Runtime permissions | `permission_handler` + `permission_handler_tizen` | Add both packages; import `permission_handler` |
-| Foreground / background notifications | `flutter_local_notifications_tizen` | Requires `notification` privilege |
+| Show / delete notifications | `tizen_notification` | Tizen-exclusive; requires `notification` privilege |
 
 (Always verify the latest version on pub.dev — the catalog rotates.)
 
@@ -114,7 +113,7 @@ final remote = await RemotePort.connect('com.example.service', 'channel');
 remote.send({'cmd': 'ping'});
 
 final local = await LocalPort.create('channel');
-local.register((Map<String, dynamic> msg, _) => debugPrint('got $msg'));
+local.register((message, [remotePort]) => debugPrint('got $message'));
 ```
 
 Required when a foreground UI app must talk to a long-running Tizen service app (see the `service-app` template).
