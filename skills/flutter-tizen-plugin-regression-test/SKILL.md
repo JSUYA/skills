@@ -71,92 +71,21 @@ Plugins mapped to an empty array (`[]`) or special conditions are skipped.
 
 **IMPORTANT:** User-provided parameters take precedence over default values. When the user explicitly specifies a device, emulator, or target, use that specification without overriding it.
 
-### User-Configurable Parameters
+| Parameter | Recognize in the request | Default when absent |
+|-----------|--------------------------|---------------------|
+| **Device/Emulator** | `device[:] <id>`, `emulator[:] <id>`, `-d <id>`, `on <id>`; keywords `emulator`, `device` / `real device`, `TV`, `wearable` | Launch TV 9.0 emulator if none running |
+| **Plugin(s)** | names matching the testable list, e.g. `test battery_plus`, `regression test for battery_plus and url_launcher` | All plugins from `recipe.yaml` with `["tv-9.0"]` |
+| **Profile** | `profile: tv-9.0`, `profile: common` | `tv-9.0` |
+| **Build Mode** | `--debug`, `--release`, `--profile` | `--debug` |
+| **Skip Steps** | `skip integration tests`, `example only`, `integration test only` | Run all steps |
 
-| Parameter | User Input Example | Default Behavior |
-|-----------|-------------------|------------------|
-| **Device/Emulator** | `device: emulator-26101`, `emulator: tv-9.0`, `on device T-12345` | Launch TV 9.0 emulator automatically |
-| **Plugin** | `plugin: connectivity_plus`, `test battery_plus` | Test all plugins from recipe.yaml |
-| **Profile** | `profile: tv-9.0`, `profile: common` | Use `tv-9.0` for TV emulator |
-| **Build Mode** | `--debug`, `--release`, `--profile` | Use `--debug` |
-| **Skip Steps** | `skip integration tests`, `example only` | Run all steps |
+Selection rules:
 
-### Parameter Parsing from User Request
+- **Device:** a user-specified ID is used directly after confirming it in `sdb devices`. The keyword `emulator` means use a running emulator, launching the TV 9.0 emulator if none is up; `device` / `real device` requires a connected physical device — error if none.
+- **Wearable:** require a user-selected wearable target and profile; never fall back to the TV emulator.
+- **Plugin:** a user-specified plugin is verified to exist under `packages/` and tested alone. Otherwise read `.github/recipe.yaml` and test every plugin whose profile list contains `"tv-9.0"`, skipping empty (`[]`) or conditional entries.
 
-When the user provides a request, parse the following patterns:
-
-1. **Device/Emulator ID**: Look for patterns like:
-   - `device <device-id>` or `device: <device-id>`
-   - `emulator <emulator-id>` or `emulator: <emulator-id>`
-   - `-d <device-id>`
-   - `on <device-id>`
-
-2. **Device Type**: Look for keywords:
-   - `emulator` → Use connected emulator (verify with `sdb devices`)
-   - `device` or `real device` → Use connected physical device
-   - `TV` or `tv` → Use TV device/emulator
-   - `wearable` → Use wearable device/emulator (requires different profile)
-
-3. **Plugin Name**: Look for plugin names matching the testable plugins list
-
-4. **Skip Options**: Look for:
-   - `skip integration test` or `no integration test`
-   - `example only` or `run example only`
-   - `integration test only` or `skip example`
-
-### Decision Flow for Device Selection
-
-```
-User Request
-    │
-    ├─► User specified device/emulator ID?
-    │       │
-    │       ├─► YES → Use specified device ID directly
-    │       │         (Verify device is connected with `sdb devices`)
-    │       │
-    │       └─► NO → User specified device type?
-    │               │
-    │               ├─► "emulator" → Check for running emulators
-    │               │               If none running, launch TV 9.0 emulator
-    │               │
-    │               ├─► "device" or "real device" → Check for physical devices
-    │               │                               Error if none connected
-    │               │
-    │               └─► NO (default) → Launch TV 9.0 emulator
-    │
-    └─► Proceed with selected device
-```
-
-### Decision Flow for Plugin Selection
-
-**IMPORTANT:** User-specified plugin name takes precedence over the default plugin list from `recipe.yaml`.
-
-```
-User Request
-    │
-    ├─► User specified plugin name?
-    │       │
-    │       ├─► YES → Test only the specified plugin
-    │       │         (Verify plugin exists in packages/ directory)
-    │       │
-    │       └─► NO → Read .github/recipe.yaml
-    │               │
-    │               ├─► Use plugins list with ["tv-9.0"] profile
-    │               │   (These are testable on TV emulator)
-    │               │
-    │               └─► Skip plugins with empty [] or special conditions
-    │
-    └─► Proceed with selected plugin(s)
-```
-
-### Plugin Selection Examples
-
-| User Request | Plugin Selection |
-|--------------|------------------|
-| `test connectivity_plus` | Only `connectivity_plus` |
-| `regression test for battery_plus and url_launcher` | Only `battery_plus` and `url_launcher` |
-| `run regression test` (no plugin specified) | All plugins from `recipe.yaml` with `["tv-9.0"]` |
-| `test all plugins` | All plugins from `recipe.yaml` with `["tv-9.0"]` |
+> The default target is the **TV 9.0 emulator (x86)** because `recipe.yaml` keys plugin testability on the `tv-9.0` profile. Newer TV 10.0 emulator images are `x64` (see [flutter-tizen-build-tpk](../flutter-tizen-build-tpk/SKILL.md)) — use one only when the user names it explicitly.
 
 ## Workflow: Regression Test
 

@@ -37,6 +37,7 @@ analyze_example_logs() {
     fi
     
     log_section "Example App Log Analysis: $log_file"
+    local found=false
     
     # Check for Dart / Flutter framework errors. dlog/logcat-style prefixes
     # (F/, E/FlutterEngine, E/FlutterJNI) never appear in the run console —
@@ -44,8 +45,9 @@ analyze_example_logs() {
     # Case-insensitive: the engine logs "Unhandled Exception:", the bare VM
     # "Unhandled exception:".
     log_info "Checking for Dart/framework errors..."
-    local dart_error_count=$(grep -ci "Unhandled Exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" 2>/dev/null || echo "0")
+    local dart_error_count=$(grep -ci "Unhandled Exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" 2>/dev/null || true)
     if [[ $dart_error_count -gt 0 ]]; then
+        found=true
         log_error "Found $dart_error_count Dart/framework error(s):"
         grep -i "Unhandled Exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" | head -10
     else
@@ -54,8 +56,9 @@ analyze_example_logs() {
     
     # Check for crashes (SIGSEGV, SIGABRT)
     log_info "Checking for crash indicators..."
-    local crash_count=$(grep -ci "SIGSEGV\|SIGABRT\|crash\|fatal signal" "$log_file" 2>/dev/null || echo "0")
+    local crash_count=$(grep -ci "SIGSEGV\|SIGABRT\|crash\|fatal signal" "$log_file" 2>/dev/null || true)
     if [[ $crash_count -gt 0 ]]; then
+        found=true
         log_error "Found $crash_count crash indicator(s):"
         grep -i "SIGSEGV\|SIGABRT\|crash\|fatal signal" "$log_file" | head -10
     else
@@ -64,8 +67,9 @@ analyze_example_logs() {
     
     # Check for exceptions
     log_info "Checking for exceptions..."
-    local exception_count=$(grep -ci "exception\|unhandled" "$log_file" 2>/dev/null || echo "0")
+    local exception_count=$(grep -ci "exception\|unhandled" "$log_file" 2>/dev/null || true)
     if [[ $exception_count -gt 0 ]]; then
+        found=true
         log_warn "Found $exception_count exception(s):"
         grep -i "exception\|unhandled" "$log_file" | head -10
     else
@@ -74,14 +78,25 @@ analyze_example_logs() {
     
     # Check for "Failed to" patterns
     log_info "Checking for 'Failed to' patterns..."
-    local failed_count=$(grep -ci "failed to" "$log_file" 2>/dev/null || echo "0")
+    local failed_count=$(grep -ci "failed to" "$log_file" 2>/dev/null || true)
     if [[ $failed_count -gt 0 ]]; then
+        found=true
         log_warn "Found $failed_count 'Failed to' pattern(s):"
         grep -i "failed to" "$log_file" | head -10
     else
         log_info "No 'Failed to' patterns found"
     fi
-    
+
+    log_info "Checking for 'Error:' patterns..."
+    local error_count=$(grep -ci "Error:" "$log_file" 2>/dev/null || true)
+    if [[ $error_count -gt 0 ]]; then
+        found=true
+        log_warn "Found $error_count 'Error:' pattern(s):"
+        grep -i "Error:" "$log_file" | head -10
+    else
+        log_info "No 'Error:' patterns found"
+    fi
+    [[ "$found" == false ]]
 }
 
 # Analyze integration test logs
@@ -94,14 +109,16 @@ analyze_test_logs() {
     fi
     
     log_section "Integration Test Log Analysis: $log_file"
+    local found=false
     
     # Count passed tests
-    local pass_count=$(grep -c "✓\|PASS\|passed" "$log_file" 2>/dev/null || echo "0")
+    local pass_count=$(grep -c "✓\|PASS\|passed" "$log_file" 2>/dev/null || true)
     log_info "Passed test indicators: $pass_count"
     
     # Count failed tests
-    local fail_count=$(grep -c "✗\|FAIL\|failed" "$log_file" 2>/dev/null || echo "0")
+    local fail_count=$(grep -c "✗\|FAIL\|failed" "$log_file" 2>/dev/null || true)
     if [[ $fail_count -gt 0 ]]; then
+        found=true
         log_error "Found $fail_count failure indicator(s):"
         grep "✗\|FAIL\|failed" "$log_file" | head -10
     else
@@ -115,22 +132,26 @@ analyze_test_logs() {
     
     # Check for "Some tests failed" message
     if grep -q "Some tests failed" "$log_file" 2>/dev/null; then
+        found=true
         log_error "✗ 'Some tests failed' message found"
     fi
     
     # Check for stack traces
-    local stack_count=$(grep -c "stack trace\|at .*\.dart" "$log_file" 2>/dev/null || echo "0")
+    local stack_count=$(grep -c "stack trace\|at .*\.dart" "$log_file" 2>/dev/null || true)
     if [[ $stack_count -gt 0 ]]; then
         log_warn "Found $stack_count stack trace line(s):"
         grep "stack trace\|at .*\.dart" "$log_file" | head -5
     fi
     
     # Check for timeout errors
-    local timeout_count=$(grep -ci "timeout\|timed out" "$log_file" 2>/dev/null || echo "0")
+    local timeout_count=$(grep -ci "timeout\|timed out" "$log_file" 2>/dev/null || true)
     if [[ $timeout_count -gt 0 ]]; then
+        found=true
         log_warn "Found $timeout_count timeout indicator(s):"
         grep -i "timeout\|timed out" "$log_file" | head -5
     fi
+
+    [[ "$found" == false ]]
 }
 
 # Generate summary
@@ -168,6 +189,7 @@ main() {
     fi
     
     local target="$1"
+    local failed=false
     
     if [[ -d "$target" ]]; then
         # Directory mode: analyze all logs
@@ -177,14 +199,14 @@ main() {
         # session — `sdb dlog` is unavailable on the TV emulator)
         for log_file in "$target"/*_example_run.log; do
             if [[ -f "$log_file" ]]; then
-                analyze_example_logs "$log_file"
+                analyze_example_logs "$log_file" || failed=true
             fi
         done
         
         # Analyze test logs
         for log_file in "$target"/*_test_output.log; do
             if [[ -f "$log_file" ]]; then
-                analyze_test_logs "$log_file"
+                analyze_test_logs "$log_file" || failed=true
             fi
         done
         
@@ -193,14 +215,16 @@ main() {
     elif [[ -f "$target" ]]; then
         # Single file mode
         if [[ "$target" == *test* ]]; then
-            analyze_test_logs "$target"
+            analyze_test_logs "$target" || failed=true
         else
-            analyze_example_logs "$target"
+            analyze_example_logs "$target" || failed=true
         fi
     else
         log_error "Target not found: $target"
         exit 1
     fi
+
+    [[ "$failed" == false ]]
 }
 
 main "$@"

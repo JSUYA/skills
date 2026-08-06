@@ -6,9 +6,10 @@ set -eu
 
 # Configuration
 PLUGINS_REPO="${PLUGINS_REPO:-$HOME/workspace/plugins}"
-TV_EMULATOR_ID="${TV_EMULATOR_ID:-emulator-26111}"
+TV_EMULATOR_ID="${TV_EMULATOR_ID:-T-samsung-9.0-x86}"
+DEVICE_ID="${DEVICE_ID:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-$HOME/.config/flutter-tizen-regression-test}"
-CONFIG_FILE="$OUTPUT_DIR/config.json"
+APP_PID=""
 
 # Testable plugins — read from the plugins repo's .github/recipe.yaml at run
 # time (see ../SKILL.md "Testable Plugins"); a hardcoded list goes stale as
@@ -49,6 +50,15 @@ log_warn() {
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
+
+stop_app() {
+    if [[ -n "$APP_PID" ]]; then
+        kill "$APP_PID" 2>/dev/null || true
+        wait "$APP_PID" 2>/dev/null || true
+        APP_PID=""
+    fi
+}
+trap stop_app EXIT
 
 # Verify environment prerequisites
 verify_environment() {
@@ -91,32 +101,54 @@ verify_environment() {
     return 0
 }
 
-# Launch TV emulator if not running
+find_tv_emulator() {
+    local id status rest
+    while read -r id status rest; do
+        [[ "$id" == emulator-* && "$status" == device ]] || continue
+        if sdb -s "$id" capability 2>/dev/null | grep -q '^profile_name:tv'; then
+            printf '%s\n' "$id"
+            return 0
+        fi
+    done < <(sdb devices)
+    return 1
+}
+
+# Launch TV emulator if not running. TV_EMULATOR_ID names an emulator config;
+# DEVICE_ID names the connected sdb target created from that config.
 launch_emulator() {
     log_info "Checking TV emulator status..."
-    
-    if sdb devices | grep -q "$TV_EMULATOR_ID"; then
-        log_info "TV emulator already running: $TV_EMULATOR_ID"
+
+    if [[ -n "$DEVICE_ID" ]]; then
+        sdb devices | awk -v id="$DEVICE_ID" '$1 == id && $2 == "device" { found = 1 } END { exit !found }' || {
+            log_error "Device is not connected: $DEVICE_ID"
+            return 1
+        }
         return 0
     fi
-    
-    log_info "Launching TV emulator..."
+
+    DEVICE_ID="$(find_tv_emulator || true)"
+    if [[ -n "$DEVICE_ID" ]]; then
+        log_info "TV emulator already running: $DEVICE_ID"
+        return 0
+    fi
+
+    log_info "Launching TV emulator: $TV_EMULATOR_ID"
     flutter-tizen emulators --launch "$TV_EMULATOR_ID" || {
         log_error "Failed to launch emulator"
         return 1
     }
-    
-    # Wait for emulator to be ready
-    local retries=30
+
+    local retries=60
     while [[ $retries -gt 0 ]]; do
-        if sdb devices | grep -q "$TV_EMULATOR_ID.*device"; then
-            log_info "Emulator ready: $TV_EMULATOR_ID"
+        DEVICE_ID="$(find_tv_emulator || true)"
+        if [[ -n "$DEVICE_ID" ]]; then
+            log_info "Emulator ready: $DEVICE_ID"
             return 0
         fi
         sleep 2
-        ((retries--))
+        retries=$((retries - 1))
     done
-    
+
     log_error "Emulator did not become ready in time"
     return 1
 }
@@ -141,23 +173,31 @@ run_example_app() {
     # `flutter-tizen run` session is the only log channel that works on TV; it
     # streams Dart print/debugPrint and engine messages, which we capture below.
     mkdir -p "$OUTPUT_DIR/logs"
-    flutter-tizen -d "$TV_EMULATOR_ID" run --debug > "$log_file" 2>&1 &
-    local app_pid=$!
+    : > "$log_file"
+    flutter-tizen -d "$DEVICE_ID" run --debug > "$log_file" 2>&1 &
+    APP_PID=$!
 
-    # Wait for app to start
-    sleep 10
-
-    # Check if app is running
-    if ! kill -0 $app_pid 2>/dev/null; then
-        log_error "App crashed during startup"
+    local retries=300
+    while [[ $retries -gt 0 ]]; do
+        grep -qE 'http://127\.0\.0\.1:[0-9]+/' "$log_file" && break
+        if ! kill -0 "$APP_PID" 2>/dev/null; then
+            wait "$APP_PID" 2>/dev/null || true
+            APP_PID=""
+            log_error "App exited before publishing a VM Service URL"
+            return 1
+        fi
+        sleep 1
+        retries=$((retries - 1))
+    done
+    if [[ $retries -eq 0 ]]; then
+        stop_app
+        log_error "Timed out waiting for the VM Service URL"
         return 1
     fi
 
-    # Let the app run for a bit
+    # Let the launched app run briefly after startup.
     sleep 15
-
-    # Stop the app
-    kill $app_pid 2>/dev/null || true
+    stop_app
 
     log_info "Example app run completed for: $plugin_name"
     return 0
@@ -169,18 +209,15 @@ run_integration_tests() {
     local example_dir="$PLUGINS_REPO/packages/$plugin_name/example"
     local test_output="$OUTPUT_DIR/logs/${plugin_name}_test_output.log"
     
-    if [[ ! -d "$example_dir/test_driver" ]]; then
-        log_warn "No test_driver directory for: $plugin_name"
-        return 1
-    fi
-    
-    if [[ ! -d "$example_dir/integration_test" ]]; then
-        log_warn "No integration_test directory for: $plugin_name"
-        return 1
+    if [[ ! -d "$example_dir/test_driver" || ! -d "$example_dir/integration_test" ]]; then
+        log_warn "No integration tests for: $plugin_name"
+        return 0
     fi
     
     log_info "Running integration tests for: $plugin_name"
     cd "$example_dir"
+    : > "$test_output"
+    local failed=false
     
     # Run each test file
     for test_file in "$example_dir/integration_test"/*.dart; do
@@ -191,14 +228,15 @@ run_integration_tests() {
             flutter-tizen drive \
                 --driver=test_driver/integration_test.dart \
                 --target="integration_test/$test_name.dart" \
-                -d "$TV_EMULATOR_ID" \
+                -d "$DEVICE_ID" \
                 --debug >> "$test_output" 2>&1 || {
                 log_error "Test failed: $test_name"
+                failed=true
             }
         fi
     done
     
-    return 0
+    [[ "$failed" == false ]]
 }
 
 # Analyze logs for issues
@@ -213,43 +251,27 @@ analyze_logs() {
     fi
     
     log_info "Analyzing logs for: $plugin_name"
-    
-    # Check for Dart / Flutter framework errors. dlog/logcat-style prefixes
-    # (F/, E/FlutterEngine, E/FlutterJNI) never appear in the run console —
-    # grepping for them silently matches nothing and reports a false PASS.
-    # Case-insensitive: the engine logs "Unhandled Exception:", the bare VM
-    # "Unhandled exception:".
-    local dart_error_count=$(grep -ci "Unhandled Exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" 2>/dev/null || echo "0")
-    if [[ $dart_error_count -gt 0 ]]; then
-        echo "Dart/framework errors: $dart_error_count" >> "$issues_file"
-        grep -i "Unhandled Exception\|EXCEPTION CAUGHT BY\|PlatformException" "$log_file" >> "$issues_file"
-    fi
-    
-    # Check for crashes
-    local crash_count=$(grep -ci "SIGSEGV\|SIGABRT\|crash" "$log_file" 2>/dev/null || echo "0")
-    if [[ $crash_count -gt 0 ]]; then
-        echo "Crash indicators: $crash_count" >> "$issues_file"
-        grep -i "SIGSEGV\|SIGABRT\|crash" "$log_file" >> "$issues_file"
-    fi
-    
-    # Check for exceptions
-    local exception_count=$(grep -ci "exception\|error:" "$log_file" 2>/dev/null || echo "0")
-    if [[ $exception_count -gt 0 ]]; then
-        echo "Exceptions/Errors: $exception_count" >> "$issues_file"
-    fi
-    
-    if [[ -f "$issues_file" ]]; then
+
+    # Run-console patterns only; dlog/logcat prefixes never appear here.
+    local pattern='Unhandled Exception|EXCEPTION CAUGHT BY|PlatformException|SIGSEGV|SIGABRT|Failed to|Error:'
+    local issue_count
+    issue_count=$(grep -Eci "$pattern" "$log_file" 2>/dev/null || true)
+    rm -f "$issues_file"
+    if [[ $issue_count -gt 0 ]]; then
+        echo "Failure indicators: $issue_count" > "$issues_file"
+        grep -Ei "$pattern" "$log_file" >> "$issues_file" || true
         log_warn "Issues found for $plugin_name - see $issues_file"
         return 1
-    else
-        log_info "No critical issues found for: $plugin_name"
-        return 0
     fi
+
+    log_info "No critical issues found for: $plugin_name"
+    return 0
 }
 
 # Generate summary report
 generate_report() {
     local plugin_name="$1"
+    local result="$2"
     local report_file="$OUTPUT_DIR/reports/$(date +%Y%m%d_%H%M%S)_${plugin_name}_report.md"
     
     mkdir -p "$OUTPUT_DIR/reports"
@@ -259,12 +281,13 @@ generate_report() {
 
 **Date:** $(date -Iseconds)
 **Plugin:** $plugin_name
-**Device:** TV 9.0 Emulator ($TV_EMULATOR_ID)
+**Device:** TV 9.0 Emulator ($DEVICE_ID)
 **flutter-tizen version:** $(flutter-tizen --version)
+**Result:** $result
 
 ## Summary
 
-Test completed. Check logs in: $OUTPUT_DIR/logs/${plugin_name}_*
+Check logs in: $OUTPUT_DIR/logs/${plugin_name}_*
 
 ## Log Files
 
@@ -280,6 +303,7 @@ EOF
 main() {
     local plugin_name=""
     local run_all=false
+    local failed=false
     
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -300,8 +324,12 @@ main() {
                 TV_EMULATOR_ID="$2"
                 shift 2
                 ;;
+            --device-id)
+                DEVICE_ID="$2"
+                shift 2
+                ;;
             *)
-                echo "Usage: $0 [--plugin <name> | --all] [--plugins-repo <path>] [--emulator-id <id>]"
+                echo "Usage: $0 [--plugin <name> | --all] [--plugins-repo <path>] [--emulator-id <id>] [--device-id <id>]"
                 exit 1
                 ;;
         esac
@@ -321,23 +349,31 @@ main() {
         log_info "Running regression tests for all plugins..."
         for plugin in "${TESTABLE_PLUGINS[@]}"; do
             log_info "Testing plugin: $plugin"
-            run_example_app "$plugin" || true
-            run_integration_tests "$plugin" || true
-            analyze_logs "$plugin" || true
-            generate_report "$plugin"
+            local result=PASS
+            run_example_app "$plugin" || result=FAIL
+            run_integration_tests "$plugin" || result=FAIL
+            analyze_logs "$plugin" || result=FAIL
+            generate_report "$plugin" "$result"
+            [[ "$result" == PASS ]] || failed=true
         done
     elif [[ -n "$plugin_name" ]]; then
         log_info "Running regression test for plugin: $plugin_name"
-        run_example_app "$plugin_name"
-        run_integration_tests "$plugin_name" || true
-        analyze_logs "$plugin_name"
-        generate_report "$plugin_name"
+        local result=PASS
+        run_example_app "$plugin_name" || result=FAIL
+        run_integration_tests "$plugin_name" || result=FAIL
+        analyze_logs "$plugin_name" || result=FAIL
+        generate_report "$plugin_name" "$result"
+        [[ "$result" == PASS ]] || failed=true
     else
         echo "Usage: $0 [--plugin <name> | --all]"
         exit 1
     fi
     
-    log_info "Regression test completed!"
+    if [[ "$failed" == true ]]; then
+        log_error "Regression test failed"
+        return 1
+    fi
+    log_info "Regression test completed"
 }
 
 main "$@"

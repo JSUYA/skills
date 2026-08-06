@@ -309,7 +309,9 @@
        profile, build mode, and skip options. User-specified values always
        win over defaults.
     3. **Select the device.** Use the user-specified id; otherwise launch the
-       TV 9.0 emulator. Confirm with `sdb devices`.
+       TV 9.0 emulator. Confirm with `sdb devices`. A wearable request requires
+       a matching user-selected target and profile; never replace it with the
+       TV default.
     4. **Resolve the plugin list.** Use the user-named plugin(s); otherwise
        read `.github/recipe.yaml` and take the plugins whose profile list
        contains `tv-9.0`. Skip plugins with empty arrays.
