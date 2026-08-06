@@ -11,4 +11,4 @@
 
 ## Scenario
 
-User has a cross-platform Flutter app that needs `app_get_data_path()` (Tizen-only). The four files together produce a usable `FooTizen().getDataPath()` call.
+User has a generated `foo_tizen` plugin scaffold and needs to replace its platform-version example with `app_get_data_path()`. Copy these four snippets into the corresponding generated files; keep the generated header, `pubspec.yaml`, and remaining project structure.
