@@ -18,11 +18,13 @@ build/tizen/tpk/<packageId>-<version>.tpk
 
 Three knobs control the output:
 
-- `--device-profile {common|tv}` — selects which Tizen profile the package targets. **Default is `tv`** (verified via `flutter-tizen build tpk --help`), so always pass `--device-profile` explicitly rather than relying on the default. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** The official `flutter-tizen` `doc/commands.md` documents only `common` and `tv`; phone targets land under `common`. Legacy `mobile` / `wearable` profiles are gone — use flutter-tizen 3.16.2 or older for Galaxy Watch.
+- `--device-profile {common|tv}` — selects which Tizen profile the package targets. **Default is `tv`** (verified via `flutter-tizen build tpk --help`), so always pass `--device-profile` explicitly rather than relying on the default. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** The CLI option list is `[mobile, tv (default), common]`: `mobile` is still accepted, but the official `flutter-tizen` `doc/commands.md` shows only `common` and `tv`, and phone targets land under `common`. The legacy `wearable` profile is gone — use flutter-tizen 3.16.2 or older for Galaxy Watch.
 - `--target-arch {arm|arm64|x86|x64}` — must match the device CPU. Default is `arm`. Current emulators are 64-bit `x64`: the Tizen 10.0 TV emulator (verified `cpu_arch:x86_64` on `T-samsung-10.0-x86_64`) and the common 10.x emulator are both `x64`; only older TV images (9.0 and earlier) are 32-bit `x86`. Verify with `sdb -s <id> capability | grep cpu_arch` — **not** `sdb shell uname -m`, which the secured TV emulator blocks (`intershell_support:disabled`, returns nothing). `x64` requires `api-version="8.0"` or newer in `tizen/tizen-manifest.xml`; the default generated `6.0` manifest fails. Real TVs and RPi are `arm` or `arm64`.
 - `--debug` / `--profile` / `--release` — Flutter build mode. Defaults to `--release`. Emulators require a JIT-capable build, i.e. `--debug`.
 
 The package is signed using the active `tizen security-profile`. See [flutter-tizen-setup](../flutter-tizen-setup/SKILL.md) before running this skill.
+
+> The profile/architecture defaults and allowed values above were re-checked on 2026-08-06 against the public `3.44.8-tizen.1.0.0` release (`1439c2b`). They are version-dependent — after upgrading, re-confirm with `flutter-tizen build tpk --help`.
 
 ## Choosing a device profile and ABI
 

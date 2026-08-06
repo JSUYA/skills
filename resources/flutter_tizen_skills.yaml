@@ -62,11 +62,12 @@
     2. **Pick the build mode.** `--debug` (JIT, required for any emulator)
        or `--release` (AOT, signed for store, default). `--profile` for
        tracing builds on real hardware.
-    3. **Pick the device profile** with `--device-profile {common|tv}`. The
-       default is `tv`, so always pass it explicitly. TV requires `tv` and a
-       `common` package will not install on a Samsung TV; phone, IoT-Headed,
-       and Raspberry Pi targets use `common`. `mobile` / `wearable` profiles
-       are gone (use flutter-tizen 3.16.2 or older for Galaxy Watch).
+    3. **Pick the device profile** with `--device-profile {mobile|tv|common}`.
+       The default is `tv`, so always pass it explicitly. TV requires `tv`
+       and a `common` package will not install on a Samsung TV; phone,
+       IoT-Headed, and Raspberry Pi targets normally use `common`. `mobile`
+       remains accepted by the CLI, while `wearable` is gone (use
+       flutter-tizen 3.16.2 or older for Galaxy Watch).
     4. **Pick the ABI** with `--target-arch {arm|arm64|x86|x64}` to match the
        device CPU. Real TVs / RPi are `arm` or `arm64`; the Tizen 10.0 TV
        emulator and the common 10.x emulator are `x64`; only TV 9.0 and older
@@ -86,6 +87,7 @@
        confirm the profile exists; a `not authorized` install error means the
        device DUID is missing from the distributor cert — re-issue and rebuild.
   resources:
+    - https://github.com/flutter-tizen/flutter-tizen/blob/master/doc/commands.md
     - https://github.com/flutter-tizen/flutter-tizen/wiki/Build-an-app
     - https://docs.tizen.org/application/tizen-studio/native-tools/manifest-text-editor
     - https://docs.tizen.org/application/native/tutorials/sign-certificate
