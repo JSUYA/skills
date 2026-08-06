@@ -40,7 +40,15 @@ sdb devices                                      # verify it shows up
 
 ### Raspberry Pi (Tizen)
 
-After flashing Tizen to the SD card and booting, configure sdbd on the device, then `sdb connect <rpi-ip>` from the host.
+RPi 4 is the supported board — RPi 3 is unsupported since Tizen 8.0, and RPi 5 (64-bit-only) is experimental.
+
+1. Flash a Tizen OS image (boot + platform `.tar.gz`) to the SD card with `sd_fusing.py`, following the official [configure-device.md — Raspberry Pi](https://github.com/flutter-tizen/flutter-tizen/blob/master/doc/configure-device.md#raspberry-pi) guide.
+2. Boot with the RPi on the same network as the host via Ethernet (or connect directly in OTG/USB-slave mode, which needs no network setup).
+3. From the host:
+   ```sh
+   sdb connect <rpi-ip>     # port 26101, same as TV
+   sdb devices              # should list <rpi-ip>:26101 as device
+   ```
 
 ## Selecting the active device
 
@@ -101,7 +109,7 @@ For an app that is already running on the device, attach with its VM Service URL
 flutter-tizen -d <id> attach --debug-url http://127.0.0.1:<port>/<token>=/
 ```
 
-The trailing `=/` is part of the URL — keep it. The URL comes from the app's own `flutter-tizen run` session, so launch the app with `flutter-tizen run` (which prints it directly) rather than from its icon.
+The trailing `=/` is part of the URL — keep it. The URL comes from the app's own `flutter-tizen run` session, so launch the app with `flutter-tizen run` (which prints it directly) rather than from its icon. The host is `127.0.0.1` even for network-connected devices: flutter-tizen forwards the device-side VM Service port to the host with `sdb forward` (`TizenDevicePortForwarder` in `lib/tizen_device.dart`), so the debugger always connects through the local forwarded port.
 
 For VS Code, the bundled `flutter-tizen: Attach (project)` configuration automates this.
 

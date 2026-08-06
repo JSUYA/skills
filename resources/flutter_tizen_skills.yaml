@@ -100,7 +100,9 @@
   instructions: |
     1. **Enable Developer Mode on the device.** TV: Apps → enter `12345`,
        toggle Developer Mode, set host IP. Watch / RPi / IOT: enable in
-       Settings or via the wiki recipe.
+       Settings or via the wiki recipe. For RPi, use RPi 4 and flash the boot
+       plus platform images with `sd_fusing.py`; RPi 3 is unsupported since
+       Tizen 8.0 and RPi 5 support is experimental.
     2. **Connect over the network.** `sdb connect <ip>:26101`. Verify with
        `sdb devices` — status must be `device`, not `offline` or
        `unauthorized`.
@@ -118,11 +120,14 @@
        `sdb dlog` works only on the common emulator / RPi where `sdb shell`
        is available.
     6. **Attach a debugger.** `flutter-tizen run` prints the Dart VM Service
-       URL. Open it in DevTools, or `flutter-tizen attach -d <device-id>` to
-       hot-reload into a running app.
+       URL. Open it in DevTools, or run `flutter-tizen -d <device-id> attach
+       --debug-url <url>` to attach to a running app. The host is `127.0.0.1`
+       even for network devices because flutter-tizen forwards the device VM
+       Service port through `sdb forward`.
     7. **Disconnect cleanly.** `sdb disconnect <ip>:26101` when finished;
        leftover offline entries break the next `flutter-tizen run`.
   resources:
+    - https://github.com/flutter-tizen/flutter-tizen/blob/master/doc/configure-device.md
     - https://github.com/flutter-tizen/flutter-tizen/wiki/Run-an-app
     - https://docs.tizen.org/application/tizen-studio/common-tools/smart-development-bridge
     - https://docs.tizen.org/application/tizen-studio/common-tools/log-view
