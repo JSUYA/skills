@@ -48,7 +48,7 @@ Catalog of commonly-used Tizen plugins:
 | Runtime permissions | `permission_handler` + `permission_handler_tizen` | Add both packages; import `permission_handler` |
 | Show / delete notifications | `tizen_notification` | Tizen-exclusive; requires `notification` privilege |
 
-(Always verify the latest version on pub.dev — the catalog rotates.)
+(The package names in the catalog and Tizen-exclusive list were present on pub.dev on 2026-08-06. This verifies names only, not compatibility or maintenance status — re-check pub.dev and the flutter-tizen/plugins repo before choosing a version.)
 
 ## Declaring privileges in tizen-manifest.xml
 

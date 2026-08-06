@@ -10,4 +10,4 @@ Add `geolocator` + `geolocator_tizen` and request location at runtime, including
 
 ## Scenario
 
-User's cross-platform app uses `geolocator`; on Tizen it returns "service disabled" until the right privileges + runtime permission are wired. The three files together flip it to a working state.
+User's cross-platform app uses `geolocator`; on Tizen it returns "service disabled" until the right privileges and runtime permission are wired. Copy these snippets into the corresponding files of an existing Flutter app.

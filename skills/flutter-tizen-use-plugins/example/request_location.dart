@@ -17,6 +17,10 @@ Future<Position?> readPosition() async {
 
   if (!status.isGranted) {
     status = await Permission.location.request();
+    if (status.isPermanentlyDenied) {
+      await openAppSettings();
+      return null;
+    }
     if (!status.isGranted) return null;
   }
 
