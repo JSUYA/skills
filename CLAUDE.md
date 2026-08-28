@@ -44,8 +44,8 @@ dart pub get                       # root: resolves the whole workspace
 # tool/dart_skills_lint/dart_skills_lint.yaml and is only loaded from that cwd,
 # so running from the repo root silently drops check-relative-paths.
 cd tool/dart_skills_lint && dart run bin/cli.dart -d ../../skills
-dart run bin/cli.dart -d ../../skills --fix         # preview autofixes
-dart run bin/cli.dart -d ../../skills --fix-apply   # apply them
+dart run bin/cli.dart -d ../../skills --fix --dry-run   # preview autofixes
+dart run bin/cli.dart -d ../../skills --fix             # apply them (--fix-apply is a deprecated alias)
 
 # Regenerate a SKILL.md (needs GEMINI_API_KEY); --dry-run fetches + counts tokens only
 dart run tool/generator/bin/skills.dart generate-skill resources/flutter_tizen_skills.yaml \

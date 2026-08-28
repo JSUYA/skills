@@ -128,7 +128,7 @@ flutter-tizen test integration_test/app_test.dart -d <device-id>
 
 ## Running unattended
 
-`flutter-tizen test` exits on its own, but a hung test holds the device and blocks the next run. In CI, bound it and treat a timeout as a failure:
+`flutter-tizen test` exits on its own, but a hung test holds the device and blocks the next run. In CI, bound it and treat a timeout as a failure (on macOS GNU `timeout` is not preinstalled — use `gtimeout` from coreutils):
 
 ```sh
 timeout 600 flutter-tizen test integration_test/app_test.dart -d <id> 2>&1 | tee integration_test.log
@@ -146,12 +146,13 @@ Scan the captured log case-insensitively for:
 ```
 Unhandled Exception:
 EXCEPTION CAUGHT BY
-PlatformException
 MissingPluginException
 SIGSEGV
 SIGABRT
 Some tests failed
 ```
+
+A bare `PlatformException` is deliberately absent: a passing test may print one while probing a missing privilege (the `try` / `on PlatformException` advice above); an unhandled one surfaces as `Unhandled Exception:`.
 
 ## Inspecting a live app with the Dart MCP server
 

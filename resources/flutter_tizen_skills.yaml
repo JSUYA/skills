@@ -233,6 +233,12 @@
        Dart/FFI plugins (`shared_preferences_tizen`, `path_provider_tizen`)
        ship no native `.so` — that is normal, not a packaging failure.
 
+    When documenting `tizen_app_control`, note that the embedder queues app
+    controls arriving before the Dart side listens and flushes them to the
+    first listener, but `onAppControl` is a broadcast stream that delivers
+    each request only once — keep one long-lived listener instead of
+    re-subscribing per screen.
+
     When documenting `messageport_tizen`, the receive callback typedef is
     `void Function(dynamic message, [RemotePort? remotePort])` — a sample
     lambda with a `Map`-typed required second parameter does not compile.
@@ -357,14 +363,18 @@
        focus through `FocusManager.instance.primaryFocus?.context?.widget.key`
        with the key on the `Focus` widget itself - `Focus.of(context)` resolves
        the nearest *ancestor* scope and reports the wrong node.
-    8. **Bound every unattended run** with `timeout 600 ...` and treat a timeout
-       as a failure; a hung integration test otherwise holds the device. Never
-       use a `flutter-tizen run` session as the harness.
+    8. **Bound every unattended run** with `timeout 600 ...` (on macOS GNU
+       `timeout` is not preinstalled — use `gtimeout` from coreutils) and
+       treat a timeout as a failure; a hung integration test otherwise
+       holds the device. Never use a `flutter-tizen run` session as the
+       harness.
     9. **Read failures from the command's own output.** On TV targets `sdb dlog`
        and `sdb shell` return nothing silently, so grepping them reports a false
        pass. Capture with `2>&1 | tee integration_test.log` and scan for
-       `Unhandled Exception:`, `EXCEPTION CAUGHT BY`, `PlatformException`,
-       `SIGSEGV`, and the reporter's own failure lines.
+       `Unhandled Exception:`, `EXCEPTION CAUGHT BY`, `MissingPluginException`,
+       `SIGSEGV`, and the reporter's own failure lines. A handled
+       `PlatformException` printed by a passing privilege probe is not a
+       failure.
     10. **Inspect a stuck app instead of guessing.** Start it with `flutter-tizen
        run`, take the `http://127.0.0.1:<port>/<token>=/` VM Service URL it
        prints, connect the Dart MCP server using the `vm_service` tool's

@@ -1,6 +1,5 @@
 ---
-trigger: glob
-globs: *.dart,pubspec.yaml,tizen-manifest.xml
+trigger: always_on
 description: Drive Flutter through the flutter-tizen CLI in Tizen projects
 ---
 

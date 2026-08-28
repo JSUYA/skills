@@ -29,15 +29,21 @@ void main() {
 
       // OK arrives as `select` on some firmware and `enter` on others; a test
       // that only sends one of them passes on a single device and fails on the
-      // next. Assert the app handles both.
-      await tester.sendKeyEvent(LogicalKeyboardKey.select);
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('details_page')), findsOneWidget);
+      // next. Open the details page once per variant so both are asserted.
+      for (final LogicalKeyboardKey okKey in <LogicalKeyboardKey>[
+        LogicalKeyboardKey.select,
+        LogicalKeyboardKey.enter,
+      ]) {
+        await tester.sendKeyEvent(okKey);
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('details_page')), findsOneWidget);
 
-      // Back must pop the route; without an explicit handler Tizen exits the app.
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('home_grid')), findsOneWidget);
+        // Back must pop the route; without an explicit handler Tizen exits
+        // the app.
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('home_grid')), findsOneWidget);
+      }
     });
 
     testWidgets('a privilege-gated call fails loudly, not silently', (WidgetTester tester) async {

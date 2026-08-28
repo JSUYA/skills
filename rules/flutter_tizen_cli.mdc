@@ -1,6 +1,5 @@
 ---
-globs: *.dart,pubspec.yaml,tizen-manifest.xml
-alwaysApply: false
+alwaysApply: true
 ---
 
 This project targets Tizen if it has a `tizen/` directory or a `tizen-manifest.xml`. When it does:

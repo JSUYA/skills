@@ -13,11 +13,27 @@ RUN_TIMEOUT="${RUN_TIMEOUT:-600}"
 # Tizen target: on Samsung TV `sdb capability` reports secure_protocol:enabled,
 # so `sdb dlog` and `sdb shell` return nothing *without erroring*. Grepping them
 # would silently report a pass.
-FAILURE_PATTERNS='Unhandled Exception:|EXCEPTION CAUGHT BY|PlatformException|MissingPluginException|SIGSEGV|SIGABRT|Some tests failed'
+# A bare `PlatformException` is not a failure marker: a passing test may print
+# one while probing a missing privilege with `try` / `on PlatformException`;
+# an unhandled one still surfaces as `Unhandled Exception:`.
+FAILURE_PATTERNS='Unhandled Exception:|EXCEPTION CAUGHT BY|MissingPluginException|SIGSEGV|SIGABRT|Some tests failed'
+
+# GNU `timeout` is absent on stock macOS; coreutils installs it as `gtimeout`.
+if command -v timeout >/dev/null 2>&1; then
+  TIMEOUT_CMD=timeout
+elif command -v gtimeout >/dev/null 2>&1; then
+  TIMEOUT_CMD=gtimeout
+else
+  echo "Neither 'timeout' nor 'gtimeout' found; install GNU coreutils" >&2
+  exit 2
+fi
 
 if [ -z "$DEVICE_ID" ]; then
   # Pick the only attached target, or make the ambiguity explicit.
-  mapfile -t ids < <(sdb devices | awk 'NR>1 && $2=="device" {print $1}')
+  # `while read` instead of `mapfile`: macOS ships Bash 3.2, which lacks it.
+  ids=()
+  while IFS= read -r id; do ids+=("$id"); done \
+    < <(sdb devices | awk 'NR>1 && $2=="device" {print $1}')
   if [ "${#ids[@]}" -eq 1 ]; then
     DEVICE_ID="${ids[0]}"
   else
@@ -34,7 +50,7 @@ echo "==> log      : $LOG_FILE"
 # registrant for Dart-only Tizen plugins. Plain `flutter test` skips that and
 # every plugin call throws MissingPluginException.
 set +e
-timeout "$RUN_TIMEOUT" flutter-tizen test "$TEST_FILE" -d "$DEVICE_ID" 2>&1 | tee "$LOG_FILE"
+"$TIMEOUT_CMD" "$RUN_TIMEOUT" flutter-tizen test "$TEST_FILE" -d "$DEVICE_ID" 2>&1 | tee "$LOG_FILE"
 status="${PIPESTATUS[0]}"
 set -e
 
