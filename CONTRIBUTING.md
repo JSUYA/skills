@@ -36,15 +36,9 @@ Skills are generated from `resources/flutter_tizen_skills.yaml` plus the doc URL
 3. Hand-review the output — Tizen-specific CLI flags, plugin names, and privilege URLs are easy for the generator to hallucinate.
 4. Lint:
    ```bash
-   dart run tool/dart_skills_lint/bin/cli.dart -d skills
+   (cd tool/dart_skills_lint && dart run bin/cli.dart -d ../../skills)
    ```
-5. Update the README table:
-   ```bash
-   dart run tool/generator/bin/skills.dart update-readme \
-     resources/flutter_tizen_skills.yaml \
-     --directory skills \
-     --readme README.md
-   ```
+5. Update the existing skill tables in `README.md` manually. The generator's `update-readme` command appends a duplicate "Available Skills" section instead of updating these tables.
 
 ## Issue triage
 

@@ -160,7 +160,7 @@ When a test hangs and the log says nothing, drive the app directly instead of gu
 
 1. `flutter-tizen -d <id> run` and copy the printed `http://127.0.0.1:<port>/<token>=/` URL (the trailing `=/` is part of it).
 2. Call the `vm_service` tool with `command: connect` and that URL as `appUri`. (`dtd` → `listDtdUris` is the DTD-based path and will usually not surface a flutter-tizen app.)
-3. Then use `widget_inspector` (`get_widget_tree`) to see what is actually mounted, `get_runtime_errors` for the last exceptions, `flutter_driver_command` to tap/scroll, and `hot_reload` after an edit.
+3. Then use `widget_inspector` (`get_widget_tree`) to see what is actually mounted, `get_runtime_errors` for the last exceptions, `flutter_driver_command` to tap/scroll (requires an enabled Flutter Driver extension), and `hot_reload` after an edit.
 
 Whatever the inspector shows should become a `ValueKey` assertion in the test.
 

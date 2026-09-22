@@ -16,9 +16,9 @@ This project targets Tizen if it has a `tizen/` directory or a `tizen-manifest.x
    reports a false pass instead of an error.
 3. **To drive a running Tizen app from the Dart MCP server, connect by VM Service URI, not DTD.** Pass the
    `http://127.0.0.1:<port>/<token>=/` URL that `flutter-tizen run` printed to the `vm_service` tool's
-   `connect` command. `hot_reload`, `hot_restart`, `get_runtime_errors`, `widget_inspector`, and
-   `flutter_driver_command` all work once connected. Use this whenever `dtd` → `listDtdUris` does not
-   surface the app.
+   `connect` command. `hot_reload`, `hot_restart`, `get_runtime_errors`, and `widget_inspector` work
+   once connected; `flutter_driver_command` also requires an enabled Flutter Driver extension in the app.
+   Use this whenever `dtd` → `listDtdUris` does not surface the app.
 4. **Privileges and app metadata live in `tizen/tizen-manifest.xml`, and it does not hot-reload.** After
    editing the manifest, rebuild and reinstall (`flutter-tizen run`, or `flutter-tizen build tpk` plus
    `sdb install`).

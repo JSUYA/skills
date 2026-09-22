@@ -127,9 +127,10 @@
        printed `http://127.0.0.1:<port>/<token>=/` URL to the `vm_service`
        tool's `connect` command (`dtd` → `listDtdUris` generally does not
        surface a flutter-tizen app). Once connected, `hot_reload`,
-       `hot_restart`, `get_runtime_errors`, `widget_inspector`, and
-       `flutter_driver_command` all work. There is no `launch_app` step — the
-       app must already be running under `flutter-tizen run`.
+       `hot_restart`, `get_runtime_errors`, and `widget_inspector` work.
+       `flutter_driver_command` also requires an enabled Flutter Driver extension
+       in the app. There is no `launch_app` step — the app must already be running
+       under `flutter-tizen run`.
     8. **Disconnect cleanly.** `sdb disconnect <ip>:26101` when finished;
        leftover offline entries break the next `flutter-tizen run`.
   resources:
@@ -379,7 +380,8 @@
        run`, take the `http://127.0.0.1:<port>/<token>=/` VM Service URL it
        prints, connect the Dart MCP server using the `vm_service` tool's
        `connect` command, then use `widget_inspector`, `get_runtime_errors`, and
-       `flutter_driver_command`.
+       `flutter_driver_command` (requires an enabled Flutter Driver extension
+       in the app).
   resources:
     - https://github.com/flutter-tizen/flutter-tizen/wiki/Run-an-app
     - https://docs.flutter.dev/testing/integration-tests

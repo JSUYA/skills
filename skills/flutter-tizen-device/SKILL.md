@@ -118,7 +118,7 @@ The Dart MCP server (`dart mcp-server`) cannot launch a Tizen app — it has no 
 | `hot_reload` / `hot_restart` | Push an edit without leaving the terminal |
 | `get_runtime_errors` | Last exceptions, including ones that scrolled past in the console |
 | `widget_inspector` (`get_widget_tree`) | See what is actually mounted before guessing at finders |
-| `flutter_driver_command` | Tap / scroll / enter text against real widgets |
+| `flutter_driver_command` | Tap / scroll / enter text against real widgets (requires an enabled Flutter Driver extension) |
 
 Use the Dart SDK that ships with flutter-tizen (`flutter-tizen`'s bundled `flutter/bin/dart`) so the MCP server matches the app's engine.
 
