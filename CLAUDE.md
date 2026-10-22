@@ -10,7 +10,7 @@ workflows — one directory under `skills/` each, all of them listed in `resourc
 
 The deliverable is `skills/<skill-name>/SKILL.md` plus an optional `example/` folder, and `rules/` for
 the invariants a per-task skill cannot enforce (a skill loads only when its description matches, so
-"always use `flutter-tizen`, never `flutter`" has to be an always-on rule). Everything under `tool/` is
+"Tizen-facing commands go through `flutter-tizen`" has to be an always-on rule). Everything under `tool/` is
 generation and validation machinery. `rules/*.md` is the portable form; the `.mdc` twin is the Cursor
 format — keep the two bodies identical.
 
@@ -58,7 +58,10 @@ dart run tool/generator/bin/skills.dart generate-skill resources/flutter_tizen_s
 dart run tool/generator/bin/skills.dart update-readme resources/flutter_tizen_skills.yaml \
     --directory skills --readme README.md
 
-# Tool tests (there are no tests over skills/ content itself)
+# Example workflow behavior + rule-body consistency (no SDK or device)
+python3 tests/example-workflows-test.py
+
+# Tool tests
 cd tool/dart_skills_lint && dart test
 cd tool/dart_skills_lint && dart test test/fixer_test.dart -N 'partial test name'
 cd tool/generator && dart test
@@ -93,14 +96,20 @@ Recurring source of bugs. Check any new or edited skill against these:
   and `intershell_support:disabled`, so `sdb dlog` / `sdb shell` return nothing **silently**. All log
   guidance must read the foreground `flutter-tizen run` console. Grepping dlog/logcat patterns
   (`E/FlutterEngine`, `F/`) matches an empty stream and reports a false PASS (`8f08608`).
-- **Never `flutter pub get`** — always `flutter-tizen pub get`; vanilla Flutter does not register the
-  Tizen platform interface. Same for `run`, `build`, `drive`, `test`.
+- **Tizen-facing `run`, `build`, `test`, `drive` go through `flutter-tizen`**; upstream `flutter` has no
+  Tizen device. Every flutter-tizen command regenerates the Tizen plugin registrant, so an upstream
+  `pub get` in between is harmless (verified 2026-10-22); prefer `flutter-tizen pub` to stay on one SDK.
+  Do not document a feature as unsupported or ban a command class without a verified failure.
 - **Most `*_tizen` plugins are unendorsed**, so both the base package and the `_tizen` sibling must be
   added or every call throws `MissingPluginException`. Never name a package without confirming it exists
   in `flutter-tizen/plugins` (`e85a6e7` removed several that never existed).
 - `flutter-tizen build tpk --device-profile` defaults to `tv` — always pass it explicitly. `x64` needs
   `api-version` ≥ `8.0` in `tizen-manifest.xml`. Read device arch with
-  `sdb -s <id> capability | grep cpu_arch`, never `uname -m` (blocked on secured TV images).
+  `sdb -s <id> capability | grep cpu_arch`; `uname -m` only works where `sdb shell` does (not on secured
+  TV images).
+- **Only `x86` emulator images are debug-only.** `x64`, `arm`, and `arm64` ship debug, profile, and
+  release engines; release and profile were verified on the Tizen 10.1 x64 emulator (2026-10-22). Do not
+  write "emulators need `--debug`".
 - `flutter-tizen run` stays attached until `q`, so unattended/scripted runs must bound it with `timeout`
   or background-and-kill.
 - Privileges in `tizen/tizen-manifest.xml` do not hot-reload; a manifest change needs a rebuild+reinstall.
@@ -120,6 +129,6 @@ a rule change must update both in the same commit.
 - External PRs are not accepted yet (`CONTRIBUTING.md`) — file issues instead.
 - License headers: `resources/*.yaml` carries the Flutter-Tizen authors BSD header and Dart files under
   `tool/` carry the Dart authors one. `SKILL.md` files and `example/` scripts carry none — don't add any.
-- Nothing validates `rules/`. CI (`.github/workflows/skill_lint.yaml`) triggers only on `skills/**`,
-  `resources/flutter_tizen_skills.yaml`, and `tool/dart_skills_lint/**`, and the linter only reads
-  `SKILL.md`. A rule and its `.mdc` twin drifting apart is caught by review or not at all.
+- CI (`.github/workflows/skill_lint.yaml`) lints `SKILL.md` files and runs
+  `tests/example-workflows-test.py` for example preflight behavior and identical `.md`/`.mdc`
+  rule bodies. Its path filters include `rules/**` and `tests/**`; rule semantics still need review.

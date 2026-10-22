@@ -54,29 +54,38 @@ log_error() {
 verify_environment() {
     log_info "Verifying environment..."
     
-    # Check flutter-tizen
-    if ! command -v flutter-tizen &> /dev/null; then
-        log_error "flutter-tizen not found on PATH"
+    if ! flutter-tizen --version; then
+        log_error "flutter-tizen could not run — check its installation and PATH"
         return 1
     fi
-    log_info "flutter-tizen: $(flutter-tizen --version)"
-    
-    # Check Tizen SDK
-    if ! command -v sdb &> /dev/null; then
-        log_error "sdb not found on PATH"
+
+    if ! sdb version; then
+        log_error "sdb could not run — check the configured SDK tools PATH"
         return 1
     fi
-    log_info "sdb: $(sdb version)"
-    
-    if ! command -v tizen &> /dev/null; then
-        log_error "tizen CLI not found on PATH"
+
+    local doctor_output
+    if ! doctor_output=$(flutter-tizen doctor -v); then
+        printf '%s\n' "$doctor_output"
+        log_error "doctor command failed"
         return 1
     fi
-    log_info "tizen: $(tizen version)"
-    
-    # Check certificate profile
-    if ! tizen security-profiles list | grep -q "Active"; then
-        log_error "No active certificate profile found"
+    printf '%s\n' "$doctor_output"
+    # shortcut: match current English doctor output; update if its status format changes.
+    if ! grep -Fq '[✓] Tizen toolchain' <<< "$doctor_output"; then
+        log_error "Tizen toolchain not verified — resolve its doctor findings"
+        return 1
+    fi
+
+    local profiles
+    if ! profiles=$(tizen security-profiles list); then
+        printf '%s\n' "$profiles"
+        log_error "Certificate query failed — profile state is unverified"
+        return 1
+    fi
+    printf '%s\n' "$profiles"
+    if ! awk 'NF > 1 && $NF == "O" {active = 1} END {exit !active}' <<< "$profiles"; then
+        log_error "No active certificate profile — select one in Certificate Manager"
         return 1
     fi
     log_info "Certificate profile: active"
@@ -340,4 +349,6 @@ main() {
     log_info "Regression test completed!"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

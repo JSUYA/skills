@@ -10,6 +10,8 @@ on:
     paths:
       - 'skills/**'
       - 'resources/flutter_tizen_skills.yaml'
+      - 'rules/**'
+      - 'tests/**'
       - 'tool/dart_skills_lint/**'
       - '.github/workflows/skill_lint.yaml'
   push:
@@ -17,6 +19,8 @@ on:
     paths:
       - 'skills/**'
       - 'resources/flutter_tizen_skills.yaml'
+      - 'rules/**'
+      - 'tests/**'
       - 'tool/dart_skills_lint/**'
       - '.github/workflows/skill_lint.yaml'
   schedule:
@@ -38,3 +42,7 @@ jobs:
 
       - name: Lint every SKILL.md under ../../skills
         run: dart run bin/cli.dart -d ../../skills
+
+      - name: Check example workflows and rule consistency
+        working-directory: .
+        run: python3 tests/example-workflows-test.py

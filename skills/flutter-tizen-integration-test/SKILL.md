@@ -4,7 +4,7 @@ description: Write and run `integration_test` suites on Tizen devices and emulat
 metadata:
   target: flutter-tizen
   category: testing
-  last_modified: Thu, 27 Aug 2026 00:00:00 GMT
+  last_modified: Mon, 19 Oct 2026 00:00:00 GMT
 ---
 # Running integration tests on Tizen
 
@@ -46,7 +46,7 @@ flutter-tizen pub add 'dev:flutter_test:{"sdk":"flutter"}'
 flutter-tizen pub get
 ```
 
-Always `flutter-tizen pub`, never `flutter pub` — the latter does not write the Tizen platform interface into the package config, and the failure only shows up as a runtime `MissingPluginException` inside the test.
+Prefer `flutter-tizen pub` so the project stays on flutter-tizen's bundled SDK. Every `flutter-tizen` command regenerates the Tizen plugin registrant, so an upstream `flutter pub get` in between does not unregister Dart-only Tizen plugins; a runtime `MissingPluginException` inside the test points at a missing `_tizen` package.
 
 Layout:
 
@@ -115,7 +115,7 @@ flutter-tizen test integration_test/app_test.dart -d <device-id>
 ```
 
 - `-d <device-id>` is required whenever more than one target is connected; pass the full ID, never a prefix.
-- `flutter-tizen test` has **no** `--debug` / `--profile` / `--release` flag — the on-device run is debug, which is also the only mode an emulator can execute (JIT). Build modes exist on `drive`, where `--debug` is the default and `--profile` / `--release` need real hardware.
+- `flutter-tizen test` has **no** `--debug` / `--profile` / `--release` flag — the on-device run is debug. Build modes exist on `drive`, where `--debug` is the default; `--profile` / `--release` run on real hardware and on `x64` emulators (`x86` images are debug-only).
 - `-j` / `--concurrency` is ignored for integration tests, so do not try to shard a device run.
 - `--no-uninstall` keeps the app installed after the run (it is removed by default) — useful when the next step is attaching to it. `--ignore-timeouts` avoids a spurious failure when the first build on a cold cache outlasts the test timeout.
 - With a host driver:
@@ -156,10 +156,10 @@ A bare `PlatformException` is deliberately absent: a passing test may print one 
 
 ## Inspecting a live app with the Dart MCP server
 
-When a test hangs and the log says nothing, drive the app directly instead of guessing. The Dart MCP server cannot launch a Tizen app, but it can attach to one by VM Service URI:
+When a test hangs and the log says nothing, drive the app directly instead of guessing. The Dart MCP server cannot launch a Tizen app, but it can attach to one that `flutter-tizen run` started:
 
-1. `flutter-tizen -d <id> run` and copy the printed `http://127.0.0.1:<port>/<token>=/` URL (the trailing `=/` is part of it).
-2. Call the `vm_service` tool with `command: connect` and that URL as `appUri`. (`dtd` → `listDtdUris` is the DTD-based path and will usually not surface a flutter-tizen app.)
+1. `flutter-tizen -d <id> run` and keep the session alive; it starts a Dart Tooling Daemon for the project.
+2. With the MCP server running from the project directory, `dtd` → `listDtdUris` lists that daemon and `dtd` → `connect` registers the app, so the tools below work without an `appUri`. If DTD does not list the app, take the `ws://127.0.0.1:<host-port>/<token>=/ws` URI from the DevTools line (or convert the host HTTP URI from `A Dart VM Service ... is available at:` by changing the scheme and appending `ws`) and call `vm_service` with `command: connect` and that `appUri`; direct HTTP is rejected by Dart MCP 1.2.1.
 3. Then use `widget_inspector` (`get_widget_tree`) to see what is actually mounted, `get_runtime_errors` for the last exceptions, `flutter_driver_command` to tap/scroll, and `hot_reload` after an edit.
 
 Whatever the inspector shows should become a `ValueKey` assertion in the test.

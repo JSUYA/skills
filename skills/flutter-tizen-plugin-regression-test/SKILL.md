@@ -4,7 +4,7 @@ description: Run regression tests for flutter-tizen plugins after changes to flu
 metadata:
   target: flutter-tizen
   category: testing
-  last_modified: Thu, 04 Jun 2026 00:00:00 GMT
+  last_modified: Mon, 19 Oct 2026 00:00:00 GMT
 ---
 # Flutter-Tizen Plugin Regression Testing
 
@@ -36,12 +36,14 @@ The skill reads `.github/recipe.yaml` to determine which plugins are testable on
 Before running regression tests, verify the environment:
 
 ### Task Progress
-- [ ] **Step 1: Verify flutter-tizen toolchain.** `flutter-tizen doctor -v` must pass.
-- [ ] **Step 2: Verify Tizen SDK.** `sdb version` and `tizen version` must succeed.
-- [ ] **Step 3: Verify certificate profile.** `tizen security-profiles list` must show an active profile.
+- [ ] **Step 1: Verify flutter-tizen toolchain.** Run `flutter-tizen --version` and `flutter-tizen doctor -v` separately. Require a healthy Tizen toolchain and resolve Flutter errors affecting this task; missing unrelated platform tooling and the bundled Flutter's unknown-channel warning do not block Tizen tests.
+- [ ] **Step 2: Verify device tooling.** Run `sdb version` directly, then confirm the selected target with `flutter-tizen devices` before device execution.
+- [ ] **Step 3: Verify certificate profile.** `tizen security-profiles list` must contain the intended active profile row (`O` in the `Active` column), not just the table header.
 - [ ] **Step 4: Verify plugins repository.** The plugins git repository must be available locally.
 
-If any prerequisite is missing, ask the user for the location of the missing component and save valid paths to a configuration file accessible by general agents.
+Run each check in a separate tool invocation. Do not require executable-location searches or `tizen version`: SDK hooks can deny them while the build and test tools still work. Record optional CLI version collection as unavailable when denied; `doctor` reports an SDK version, not that CLI version. Distinguish failed, policy-denied, and unexecuted checks. A denied required check remains unverified; use the installed, initialized SDK skill's documented query or extension UI when available. Do not treat a policy denial as evidence that the SDK is missing or hide the command in a script to retry it.
+
+If a component is actually missing, use the setup workflow to resolve it. Reuse paths reported by the tools; ask for a location only when it cannot be determined, and save validated paths to the configuration below. Flutter-Tizen's `TIZEN_SDK` / extension `.tizen.path.config` and the SDK plugin's `.tizen.sdk.path.config` are separate settings; confirm they refer to the intended SDK.
 
 ### Configuration Storage
 
@@ -50,7 +52,7 @@ On first run, the skill stores paths in `~/.config/flutter-tizen-regression-test
 ```json
 {
   "flutterTizenPath": "/path/to/flutter-tizen",
-  "tizenSdkPath": "/path/to/tizen-studio",
+  "tizenSdkPath": "/path/to/sdk-root",
   "pluginsPath": "/path/to/plugins",
   "embedderPath": "/path/to/embedder",
   "enginePath": "/path/to/engine"

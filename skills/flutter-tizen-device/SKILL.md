@@ -4,7 +4,7 @@ description: Connect to and run Flutter apps on Tizen devices and emulators usin
 metadata:
   target: flutter-tizen
   category: device
-  last_modified: Wed, 27 May 2026 08:02:04 GMT
+  last_modified: Mon, 19 Oct 2026 00:00:00 GMT
 ---
 # Connecting, running, and logging Tizen targets
 
@@ -95,23 +95,24 @@ The same session prints the Dart VM Service URL (for DevTools) and accepts the h
 
 `flutter-tizen run` builds, installs, launches, **and** attaches the Dart VM service in one step — prefer it. It streams logs and prints the VM Service URL in the foreground.
 
-For an app that is already running on the device, attach with its VM Service URL:
+For a separate CLI attach session, use the **device-side VM Service URL**. Start the app with `flutter-tizen -v -d <id> run` and capture the line labelled `VM Service URL on device:`. Keep the app alive (use `d` to detach the original terminal if needed), then pass that URI:
 
 ```sh
-flutter-tizen -d <id> attach --debug-url http://127.0.0.1:<port>/<token>=/
+flutter-tizen -d <id> attach --debug-url http://127.0.0.1:<device-port>/<device-token>=/
 ```
 
-The trailing `=/` is part of the URL — keep it. The URL comes from the app's own `flutter-tizen run` session, so launch the app with `flutter-tizen run` (which prints it directly) rather than from its icon.
+Keep the scheme, port, token, and trailing slash from that device URI. The normal `A Dart VM Service ... is available at:` output is a **host-forwarded/DDS address**; passing it to CLI attach can forward the host port as a device port and repeatedly reset the connection. HTTP is valid for CLI attach. If the device URI is unavailable, use the existing `run` session rather than guessing the port.
 
 For VS Code, the bundled `flutter-tizen: Attach (project)` configuration automates this.
 
 ## Driving the app from the Dart MCP server
 
-The Dart MCP server (`dart mcp-server`) cannot launch a Tizen app — it has no Tizen device backend, and its DTD discovery (`dtd` → `listDtdUris`) generally does not surface one. Attach by **VM Service URI** instead:
+The Dart MCP server (`dart mcp-server`) cannot launch a Tizen app: `launch_app` is off by default and drives upstream `flutter`, which has no Tizen device backend. It can attach to an app that `flutter-tizen run` started, through DTD first and by VM Service URI as the fallback:
 
-1. `flutter-tizen -d <id> run` and copy the printed `http://127.0.0.1:<port>/<token>=/` URL (the trailing `=/` is part of it).
-2. Call the `vm_service` tool with `command: connect` and that URL as `appUri`. This is the documented path for "apps not launched via DTD".
-3. Once connected, the app-level tools work as they do on any other platform:
+1. `flutter-tizen -d <id> run` and keep that session alive. It starts a Dart Tooling Daemon for the project.
+2. Run the MCP server from the project directory. `dtd` → `listDtdUris` lists that daemon; `dtd` → `connect` with its `ws://` URI registers the app (`listConnectedApps` shows it with its VM Service URI). The tools below then work without an `appUri`.
+3. If DTD does not list the app, connect by **host WebSocket URI**: take `ws://127.0.0.1:<host-port>/<host-token>=/ws` from the DevTools line (`?uri=...`), or convert the `http://127.0.0.1:<host-port>/<host-token>=/` host URL from `A Dart VM Service ... is available at:` by changing the scheme and appending `ws` after the trailing `/`. Call `vm_service` with `command: connect` and that URI as `appUri`; passing HTTP directly fails with `Unsupported URL scheme 'http'` in Dart MCP 1.2.1.
+4. Once connected, the app-level tools work as they do on any other platform:
 
 | Tool | Use |
 |---|---|
@@ -120,7 +121,7 @@ The Dart MCP server (`dart mcp-server`) cannot launch a Tizen app — it has no 
 | `widget_inspector` (`get_widget_tree`) | See what is actually mounted before guessing at finders |
 | `flutter_driver_command` | Tap / scroll / enter text against real widgets |
 
-Use the Dart SDK that ships with flutter-tizen (`flutter-tizen`'s bundled `flutter/bin/dart`) so the MCP server matches the app's engine.
+Prefer the Dart SDK that ships with flutter-tizen (`flutter-tizen`'s bundled `flutter/bin/dart`) for the MCP server; a separate Dart install of the same version also works.
 
 ## Workflow: Bring Up a Target and Read Logs
 
@@ -129,7 +130,7 @@ Use the Dart SDK that ships with flutter-tizen (`flutter-tizen`'s bundled `flutt
 - [ ] **Step 2: Select the device.** Capture the exact `device-id` and use it as `-d <id>` for every subsequent command.
 - [ ] **Step 3: Build + run.** `flutter-tizen -d <id> run` (or `--profile` / `--release`). Logs stream in this terminal.
 - [ ] **Step 4: Reproduce the issue / exercise the feature.** Watch the `run` console; use `r` for hot reload as needed. To keep a copy, re-run with `2>&1 | tee app.log`.
-- [ ] **Step 5: If debugging an externally-launched app**, attach with `flutter-tizen -d <id> attach --debug-url <url>` (start it via `flutter-tizen run` so the URL is printed).
+- [ ] **Step 5: If a separate CLI attach is needed**, use `flutter-tizen -d <id> attach --debug-url <device-uri>` from the verbose `VM Service URL on device:` line. For Dart MCP, discover the app through `dtd` first, then fall back to the host WebSocket URI.
 - [ ] **Step 6: Detach cleanly** with `q` or `Ctrl-C`.
 
 ## Common failures
@@ -140,5 +141,7 @@ Use the Dart SDK that ships with flutter-tizen (`flutter-tizen`'s bundled `flutt
 | `No connected Tizen devices` from `flutter-tizen` | sdb sees the device but flutter-tizen does not | Check `sdb -s <id> capability` succeeds; if it hangs, restart the device |
 | `flutter-tizen run` hangs at `Installing TPK` | Stale install of the same package conflicts | `sdb -s <id> uninstall <appid>` then retry |
 | `flutter-tizen run` console shows no app output | App logged nothing yet, or crashed at startup | Trigger a `debugPrint`; for startup crashes re-run with `--start-paused` |
-| `attach --debug-url` fails with `Connection refused` | The app crashed before printing the VM service URL, or printed an `http://...:0/` URL (port not yet allocated) | Restart the app with `flutter-tizen run --start-paused` and use the URL it prints |
+| CLI attach repeatedly resets the connection | A host-forwarded/DDS URI was used as a device URI | Use the verbose `VM Service URL on device:` value, keeping its HTTP scheme and device port |
+| `attach --debug-url` fails with `Connection refused` | The app stopped or its device VM port is unavailable | Restart with `flutter-tizen -v -d <id> run --start-paused`, wait for a nonzero device VM port, and keep the app alive |
+| Dart MCP connect reports `Unsupported URL scheme 'http'` | An HTTP URI was passed to the WebSocket client | Convert the host VM URI to `ws://.../ws`, preserving the token path |
 | Multiple emulators selected ambiguously | Prefix match collision | Pass the full ID (`emulator-26101`, not `emulator`) |

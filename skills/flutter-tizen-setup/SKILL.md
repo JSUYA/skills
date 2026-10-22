@@ -4,7 +4,7 @@ description: Install and verify the flutter-tizen toolchain (Tizen SDK, sdb, cer
 metadata:
   target: flutter-tizen
   category: environment
-  last_modified: Wed, 27 May 2026 08:02:04 GMT
+  last_modified: Mon, 19 Oct 2026 00:00:00 GMT
 ---
 # Setting up flutter-tizen
 
@@ -17,34 +17,28 @@ Confirm the host environment before installing anything:
 - For the Tizen emulator on Linux, HW virtualization (Intel VT-x / AMD-V) must be enabled in BIOS. On Ubuntu 24.04, install `libsdl1.2debian` if the emulator fails to launch.
 - For TV / RPi targets, the host PC and the device must reach each other on the same L2 network.
 
-## Install the Tizen SDK
+## Reuse or install the Tizen SDK
 
 Tizen Studio 6.1 was the last supported standalone release; the `VS Code Extension for Tizen` is now the recommended channel for the Tizen SDK.
 
-1. Install the **VS Code Extension for Tizen** (or a legacy Tizen Studio install if already in use).
+If flutter-tizen is already installed, run `flutter-tizen doctor -v` first. Reuse the SDK it reports when the Tizen toolchain check passes; do not reinstall it or rewrite `PATH` just to discover executable locations.
+
+1. If no usable SDK is installed, install the **VS Code Extension for Tizen**. An existing legacy Tizen Studio installation can be reused where the host policy permits it.
 2. Open `Tizen: Package Manager` from the Command Palette and install:
    - `[Advanced] - [6.0 IOT-Headed + Mobile]` — required by flutter-tizen for the base build.
    - `[Advanced] - [9.0 Tizen or later]` — required only to use Tizen emulators.
    - The TV 9.0 emulator image — required only for TV emulator targets.
-3. Add the SDK tools directory to `PATH` so that `sdb` and `tizen` are resolvable from a shell:
-   ```sh
-   export PATH="$HOME/tizen-studio/tools:$PATH"
-   # Or, for the VS Code extension layout:
-   export PATH="$HOME/.tizen-extension-platform/server/sdktools/data/tools:$PATH"
-   ```
-   The extension-layout path can move between extension versions; if `sdb` is not at that path, locate it with `find ~ -name sdb -type f 2>/dev/null` and use its parent directory.
+3. If shell tools are unavailable, use the installation location reported by the extension or SDK manager to configure their `PATH` entries. Use the actual executable directories: `sdb` is under `tools`, while the legacy `tizen` launcher may be under `tools/ide/bin`. Do not assume both live in the same directory or search the whole home directory for `sdb`.
 
-   The `export` lines are for Linux/macOS shells. On Windows, add the SDK `tools` directory and `flutter-tizen\bin` to the user `Path` instead, as documented in the official [windows-install.md](https://github.com/flutter-tizen/flutter-tizen/blob/master/doc/windows-install.md).
+   For a custom SDK location, Flutter-Tizen accepts `TIZEN_SDK` pointing to the SDK root. It also reads the extension's `.tizen.path.config`. The `tizen-sdk-skills` plugin uses a separate `.tizen.sdk.path.config`, configured through `tizen-sdk-init`; initializing that plugin does not configure Flutter-Tizen. Compare the SDK locations they report before using both. `TIZEN_SDK_PATH` is not a substitute for these settings.
 
-   Verify with:
-   ```sh
-   which sdb && sdb version
-   which tizen && tizen version
-   ```
+   On Windows, configure the user `Path` as documented in the official [windows-install.md](https://github.com/flutter-tizen/flutter-tizen/blob/master/doc/windows-install.md).
+
+   Verify shell access with `sdb version`. Check certificate access separately with `tizen security-profiles list`. Neither requires a preceding executable-location query or a CLI version query.
 
 ## Install flutter-tizen
 
-`flutter-tizen` ships its own pinned Flutter SDK under `flutter-tizen/flutter`. **Do not install upstream `flutter` separately and put it before flutter-tizen on `PATH` — the two SDKs will fight over `.flutter_tool_state`.**
+`flutter-tizen` ships its own pinned Flutter SDK under `flutter-tizen/flutter` and always uses it, so an upstream `flutter` install can coexist. Call `flutter-tizen` by name for Tizen work; a `flutter` found first on `PATH` may be another version and has no Tizen device.
 
 1. Clone the tool:
    ```sh
@@ -61,7 +55,7 @@ Tizen Studio 6.1 was the last supported standalone release; the `VS Code Extensi
 
 ## Create a certificate profile
 
-Tizen refuses to install unsigned packages — even on the emulator. Create one Samsung distributor profile per host:
+Tizen refuses to install unsigned packages — even on the emulator. Reuse a valid existing certificate profile; create one when missing:
 
 1. Easiest: use **Certificate Manager** in the VS Code extension. Pick `Create Samsung Certificate` when unsure.
 2. CLI alternative (after `tizen` is on `PATH`):
@@ -76,22 +70,29 @@ Tizen refuses to install unsigned packages — even on the emulator. Create one 
 
 ## Verify the toolchain
 
-Run, in order:
+Run each check as a **separate tool invocation** so a rejected command cannot prevent unrelated checks from executing:
 
 ```sh
 flutter-tizen doctor -v
 sdb version
 sdb devices
 flutter-tizen devices
+tizen security-profiles list
 ```
 
 What the output must show:
 
-- `flutter-tizen doctor` reports a green check for **Flutter** and **Tizen toolchain**. A green check for `Connected device` only matters if a device is plugged in.
-- `sdb devices` lists at least one target as `device` (not `offline` or `unauthorized`) before continuing.
-- `flutter-tizen devices` lists the matching Tizen target with a non-empty device ID (e.g. `emulator-26101`).
+- `flutter-tizen doctor` reports a green check for **Tizen toolchain**. Resolve Flutter/toolchain errors relevant to the Tizen task. The bundled Flutter's unknown-channel warning and missing Android/iOS/web tooling do not prevent a Tizen-only build.
+- Before device execution, `sdb devices` lists the selected target as `device` (not `offline` or `unauthorized`), and `flutter-tizen devices` lists its matching ID. A build-only check does not require a connected device.
+- The certificate list contains the intended profile. For the default build, require an active profile row (`O` in the `Active` column), not just the table header; otherwise select a valid profile explicitly at build time.
 
 If `flutter-tizen doctor` says `To install missing package(s)`, install the listed package from Package Manager and re-run; the missing-package check is the most common false-`doctor` for new hosts.
+
+### Working with SDK command guards
+
+The installed `tizen-sdk-skills` hooks can reject executable-location searches, legacy SDK path commands, and `tizen version` even when the tools exist. These are not required preflight checks. Keep CLI version collection optional; the SDK version printed by `doctor` is not the CLI version.
+
+Record each check as passed, failed, denied by policy, or not run. A denied version query means **version not collected**, not SDK missing. A denied required check remains unverified until an allowed equivalent succeeds. If a shell tool is unavailable, use the installed SDK skill's documented device/certificate query when available and initialized, or the extension UI; do not guess runner paths or make the SDK plugin a prerequisite. Report any unresolved check explicitly. Do not hide a denied command in a script or disable hooks to retry it.
 
 ## Workflow: First-Time Setup
 
@@ -99,12 +100,12 @@ Copy this checklist and tick items as completed:
 
 ### Task Progress
 - [ ] **Step 1: Verify host prerequisites.** OS, `git`, `unzip`, Python 3 present; virtualization enabled if emulator targets are needed.
-- [ ] **Step 2: Install Tizen SDK** via VS Code Extension for Tizen, with `6.0 IOT-Headed + Mobile` (and optionally `9.0` + TV 9.0 image).
-- [ ] **Step 3: Put `sdb` and `tizen` on `PATH`** and confirm with `sdb version` and `tizen version`.
+- [ ] **Step 2: Reuse or install Tizen SDK** with `6.0 IOT-Headed + Mobile` (and optionally `9.0` + TV 9.0 image).
+- [ ] **Step 3: Verify shell access** with `sdb version`; configure actual tool directories only if needed. Query certificate profiles separately.
 - [ ] **Step 4: Clone flutter-tizen** and put `bin/` on `PATH`; run `flutter-tizen --version` to bootstrap.
-- [ ] **Step 5: Create a Samsung certificate profile** via Certificate Manager (or `tizen security-profiles add`).
-- [ ] **Step 6: Plug in a device or launch an emulator**, then check `sdb devices` shows it as `device`.
-- [ ] **Step 7: Run `flutter-tizen doctor -v`** and resolve every red item before continuing to any build skill.
+- [ ] **Step 5: Verify or create a certificate profile** via Certificate Manager (or `tizen security-profiles add`).
+- [ ] **Step 6: If device execution is needed, connect the target**, then check `sdb devices` and `flutter-tizen devices` agree on its ID.
+- [ ] **Step 7: Run `flutter-tizen doctor -v`** and resolve errors relevant to Tizen development. Report unrelated platform issues separately.
 - [ ] **Step 8: Smoke build.** `flutter-tizen create demo && cd demo && flutter-tizen build tpk --debug --device-profile common` must succeed end-to-end.
 
 ## Troubleshooting

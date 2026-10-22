@@ -18,28 +18,49 @@
     development host, when `flutter-tizen doctor` reports missing components,
     when `sdb` or `tizen` CLI is not found or a certificate profile is missing,
     or before a clean-room device build.
-  examplePrompt: "Set up flutter-tizen on a fresh Ubuntu 24.04 host and confirm doctor is green"
+  examplePrompt: "Set up flutter-tizen on Ubuntu 24.04 and verify the Tizen toolchain and a signed smoke build"
   instructions: |
     1. **Verify host prerequisites.** 64-bit Linux (Ubuntu 22.04 / 24.04
        verified), macOS x64, or Windows x64. `git`, `unzip`, `bash`, Python 3
        on `PATH`. For the Tizen emulator, HW virtualization must be on.
-    2. **Install the Tizen SDK** via the VS Code Extension for Tizen (Tizen
-       Studio 6.1 standalone is also fine if already installed). Use the
-       Tizen Package Manager to install `[Advanced] 6.0 IOT-Headed + Mobile`
-       and, if emulators are needed, `[Advanced] 9.0` plus the relevant
-       emulator image.
-    3. **Put `sdb` and `tizen` on `PATH`** and verify with `sdb version` and
-       `tizen version`. On Windows, add the SDK `tools` directory to the
-       user `Path` instead.
+    2. **Reuse or install the Tizen SDK.** If flutter-tizen is installed,
+       start with `flutter-tizen doctor -v` and reuse its healthy SDK.
+       Otherwise install via the VS Code Extension for Tizen; reuse legacy
+       Tizen Studio only where host policy permits. Required packages are
+       `[Advanced] 6.0 IOT-Headed + Mobile` and, for emulators, `[Advanced]
+       9.0` plus the relevant image. Do not reinstall a healthy SDK.
+    3. **Verify shell tools directly** with `sdb version` and a separate
+       `tizen security-profiles list`. Do not require executable-location
+       searches, a home-directory search for sdb, or `tizen version`.
+       Configure PATH only when needed, using the actual installation
+       directories (sdb under tools; the legacy tizen launcher may be under
+       tools/ide/bin), not an assumed legacy path. Flutter-Tizen reads
+       `TIZEN_SDK` or the extension's `.tizen.path.config`; the SDK plugin
+       reads its separate `.tizen.sdk.path.config` set by `tizen-sdk-init`.
+       Compare their reported SDK roots; `TIZEN_SDK_PATH` does not replace
+       these settings. On Windows configure the user Path.
     4. **Clone flutter-tizen** from github.com/flutter-tizen/flutter-tizen,
-       put `bin/` on `PATH` ahead of any upstream `flutter`, and run
+       put `bin/` on `PATH` (an upstream `flutter` can coexist), and run
        `flutter-tizen --version` to bootstrap the pinned Flutter SDK. On
        Windows, add `flutter-tizen\bin` to the user `Path`.
-    5. **Create a Samsung certificate profile** via Certificate Manager (or
-       `tizen security-profiles add`). Tizen refuses to install unsigned
-       packages even on the emulator.
-    6. **Run `flutter-tizen doctor -v`** and resolve every red item before
-       continuing. `Currently on an unknown channel` can be ignored.
+    5. **Verify or create a certificate profile** via Certificate Manager
+       (or `tizen security-profiles add`). Check the intended profile row,
+       including the active `O` marker for a default build, not just the
+       table header; select a valid profile explicitly if needed. Tizen
+       refuses unsigned packages even on the emulator.
+    6. **Run each preflight check in a separate tool invocation.** Require
+       a healthy Tizen toolchain and resolve Flutter errors affecting this
+       task; missing unrelated platform tools and the bundled Flutter's
+       unknown-channel warning do not block Tizen-only work. Require a
+       matching target in `sdb devices` and `flutter-tizen devices` only
+       before device execution. Record passed, failed, policy-denied, and
+       unexecuted checks separately. Denied optional CLI version collection
+       means uncollected metadata, not SDK missing; doctor's SDK version
+       is not the CLI version. A denied required check remains unverified
+       until an allowed equivalent succeeds. When available, use the
+       installed, initialized SDK skill's documented device/certificate
+       query or the extension UI; do not guess runners, require that
+       plugin, disable hooks, or hide rejected commands inside scripts.
     7. **Smoke-build.** `flutter-tizen create demo && cd demo &&
        flutter-tizen build tpk --debug --device-profile common` must succeed
        end-to-end.
@@ -62,14 +83,14 @@
        profile="...">` and `api-version` must match the device profile (e.g.
        `tv` + `6.5` for a 2022 TV). `x64` builds require `api-version="8.0"`
        or newer; the default generated `6.0` manifest fails on x64.
-    2. **Pick the build mode.** `--debug` (JIT, required for any emulator)
-       or `--release` (AOT, signed for store, default). `--profile` for
-       tracing builds on real hardware.
+    2. **Pick the build mode.** `--debug` (JIT, hot reload; the only mode on
+       `x86` emulator images) or `--release` (AOT, signed for store, default).
+       `--profile` for tracing on real hardware or an `x64` emulator.
     3. **Pick the device profile** with `--device-profile {common|tv}`. The
        default is `tv`, so always pass it explicitly. TV requires `tv` and a
        `common` package will not install on a Samsung TV; phone, IoT-Headed,
-       and Raspberry Pi targets use `common`. `mobile` / `wearable` profiles
-       are gone (use flutter-tizen 3.16.2 or older for Galaxy Watch).
+       and Raspberry Pi targets use `common`. The flag still accepts `mobile`;
+       `wearable` needs flutter-tizen 3.16.2 or older (Galaxy Watch).
     4. **Pick the ABI** with `--target-arch {arm|arm64|x86|x64}` to match the
        device CPU. Real TVs / RPi are `arm` or `arm64`; the Tizen 10.0 TV
        emulator and the common 10.x emulator are `x64`; only TV 9.0 and older
@@ -80,7 +101,11 @@
        active profile is wrong. Distributor certs must register the DUID of
        every device you side-load to.
     6. **Run** `flutter-tizen build tpk` with the chosen flags. The TPK lands
-       in `build/tizen/tpk/`.
+       in `build/tizen/tpk/`. Keep Flutter compilation in this pipeline even
+       when a general SDK build skill is installed: a generic native build
+       can package stale Dart assets. Run doctor and certificate queries
+       separately, require the Tizen toolchain and selected signing profile,
+       and report unrelated platform issues separately.
     7. **Verify by installing** on the target: `sdb -s <id> install
        build/tizen/tpk/<file>.tpk` must end with `key[end]   val[ok]`.
        Inspect contents with `unzip -l <tpk>` and the manifest with
@@ -120,16 +145,27 @@
        nothing — the `run` console is the only log channel that works there.
        `sdb dlog` works only on the common emulator / RPi where `sdb shell`
        is available.
-    6. **Attach a debugger.** `flutter-tizen run` prints the Dart VM Service
-       URL. Open it in DevTools, or `flutter-tizen attach -d <device-id>` to
-       hot-reload into a running app.
-    7. **Attach the Dart MCP server by VM Service URI, not DTD.** Pass the
-       printed `http://127.0.0.1:<port>/<token>=/` URL to the `vm_service`
-       tool's `connect` command (`dtd` → `listDtdUris` generally does not
-       surface a flutter-tizen app). Once connected, `hot_reload`,
-       `hot_restart`, `get_runtime_errors`, `widget_inspector`, and
-       `flutter_driver_command` all work. There is no `launch_app` step — the
-       app must already be running under `flutter-tizen run`.
+    6. **Prefer the attached `flutter-tizen run` session.** For a separate
+       CLI attach, start with `flutter-tizen -v -d <id> run`, capture the
+       `VM Service URL on device:` URI, keep the app alive (detach with `d`
+       if needed), and use `flutter-tizen -d <id> attach --debug-url
+       <device-uri>`. Preserve its HTTP scheme, device port, and token.
+       The normal printed host/DDS URI is not a CLI attach device endpoint;
+       using it can forward the wrong port and repeatedly reset connections.
+       If the device URI is unavailable, use the run session, not a guessed
+       port.
+    7. **Connect Dart MCP through DTD first.** Keep `flutter-tizen run`
+       alive; it starts a Dart Tooling Daemon for the project. With the MCP
+       server run from the project directory, `dtd` → `listDtdUris` lists
+       that daemon and `dtd` → `connect` registers the app, so hot reload,
+       restart, runtime errors, widget inspection, and Driver tools work
+       without an `appUri`. If DTD does not list the app, connect by host
+       WebSocket URI: take `ws://127.0.0.1:<host-port>/<token>=/ws` from the
+       DevTools line, or convert the host HTTP URI from `A Dart VM Service
+       ... is available at:` by changing the scheme and appending `ws`, and
+       pass it as `appUri` to `vm_service` with `command: connect`. Direct
+       HTTP fails in Dart MCP 1.2.1. `launch_app` is off by default and
+       drives upstream `flutter`, so it cannot start a Tizen app.
     8. **Disconnect cleanly.** `sdb disconnect <ip>:26101` when finished;
        leftover offline entries break the next `flutter-tizen run`.
   resources:
@@ -211,8 +247,9 @@
        sibling (e.g. `shared_preferences` *and* `shared_preferences_tizen`),
        or every call throws `MissingPluginException`. Tizen-exclusive plugins
        are added directly.
-    3. **Run `flutter-tizen pub get`** — vanilla `flutter pub get` will not
-       register the Tizen platform interface.
+    3. **Run `flutter-tizen pub get`** to stay on flutter-tizen's bundled SDK;
+       every later `flutter-tizen` command regenerates the Tizen plugin
+       registrant, so an upstream `flutter pub get` in between is harmless.
     4. **Declare required privileges in `tizen/tizen-manifest.xml`.** Each
        plugin lists them in its README; copy them under `<privileges>` (e.g.
        `http://tizen.org/privilege/location`,
@@ -350,9 +387,9 @@
        `chromedriver`, `-d chrome`, `flutter build apk`, and Firebase Test Lab
        recipes do not apply to Tizen.
     6. **Do not invent build-mode flags on `test`.** `flutter-tizen test` has no
-       `--debug` / `--profile` / `--release`; the on-device run is debug, which
-       is also the only mode an emulator can execute (JIT). Those flags live on
-       `drive`, where `--debug` is the default. `-j` / `--concurrency` is
+       `--debug` / `--profile` / `--release`; the on-device run is debug. Those
+       flags live on `drive`, where `--debug` is the default and `--profile` /
+       `--release` need real hardware or an `x64` emulator. `-j` / `--concurrency` is
        ignored for integration tests. `--no-uninstall` keeps the app installed
        afterwards (it is removed by default) and `--ignore-timeouts` avoids a
        spurious failure when a cold first build outlasts the test timeout.
@@ -375,11 +412,17 @@
        `SIGSEGV`, and the reporter's own failure lines. A handled
        `PlatformException` printed by a passing privilege probe is not a
        failure.
-    10. **Inspect a stuck app instead of guessing.** Start it with `flutter-tizen
-       run`, take the `http://127.0.0.1:<port>/<token>=/` VM Service URL it
-       prints, connect the Dart MCP server using the `vm_service` tool's
-       `connect` command, then use `widget_inspector`, `get_runtime_errors`, and
-       `flutter_driver_command`.
+    10. **Inspect a stuck app instead of guessing.** Keep `flutter-tizen run`
+       alive; it starts a Dart Tooling Daemon for the project. With the MCP
+       server run from the project directory, `dtd` → `listDtdUris` lists it
+       and `dtd` → `connect` registers the app, so `widget_inspector`,
+       `get_runtime_errors`, `flutter_driver_command`, and hot reload work
+       without an `appUri`. If DTD does not list the app, take the
+       `ws://127.0.0.1:<host-port>/<token>=/ws` URI from the DevTools line
+       (or convert the host HTTP URI from `A Dart VM Service ... is available
+       at:` by changing the scheme and appending `ws`) and connect with
+       `vm_service`, `command: connect`, and that `appUri`; Dart MCP 1.2.1
+       rejects direct HTTP.
   resources:
     - https://github.com/flutter-tizen/flutter-tizen/wiki/Run-an-app
     - https://docs.flutter.dev/testing/integration-tests
@@ -394,11 +437,24 @@
     updates, or when running CI-style plugin verification.
   examplePrompt: "Run a regression test for connectivity_plus on the TV 9.0 emulator"
   instructions: |
-    1. **Verify the environment.** `flutter-tizen doctor -v`, `sdb version`,
-       `tizen version`, and `tizen security-profiles list` must all pass, and
-       the `flutter-tizen/plugins` repo must be available locally. Persist
-       discovered paths to
-       `~/.config/flutter-tizen-regression-test/config.json`.
+    1. **Verify the environment with separate tool invocations.** Run
+       `flutter-tizen --version`, `flutter-tizen doctor -v`, `sdb version`,
+       and `tizen security-profiles list`. Require a healthy Tizen toolchain,
+       resolve Flutter errors affecting this task, and require the intended
+       active certificate row (`O`), not just a list header. Unrelated
+       platform errors and the bundled Flutter's unknown-channel warning
+       do not block Tizen tests. Do not require executable-location searches
+       or `tizen version`. Record optional CLI metadata as uncollected if
+       denied; doctor's SDK version is not the CLI version. Distinguish
+       failure, policy denial, and unexecuted checks; denied required checks
+       stay unverified until an allowed equivalent query succeeds. When
+       available, use an installed, initialized SDK skill's documented query
+       or the extension UI; do not hide rejected commands inside scripts.
+       Confirm the plugins repo exists locally. Reuse reported paths, ask
+       only when unresolved, and save validated paths to
+       `~/.config/flutter-tizen-regression-test/config.json`. Flutter-Tizen's
+       `TIZEN_SDK` / extension `.tizen.path.config` and the SDK plugin's
+       `.tizen.sdk.path.config` are separate; verify the intended SDK root.
     2. **Parse the user request** for device/emulator id, plugin name(s),
        profile, build mode, and skip options. User-specified values always
        win over defaults.

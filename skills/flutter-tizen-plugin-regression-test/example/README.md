@@ -11,6 +11,8 @@ End-to-end regression testing for flutter-tizen plugins on TV emulator.
 
 User wants to validate that existing plugins continue to work after changes to the flutter-tizen toolchain, embedder, or engine. The scripts handle the full test cycle: verify environment → launch emulator → run example app → capture logs → analyze for issues.
 
+The preflight uses the configured shell tools directly, without executable-location searches or a legacy CLI version query. It requires a healthy Tizen toolchain and an actual active certificate row. Unrelated doctor platform errors do not block Tizen tests; a failed command or unverified required check does. If an agent host denies a check, use the skill's documented alternative instead of hiding it inside this runner.
+
 ## Usage
 
 ```bash

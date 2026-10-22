@@ -4,7 +4,7 @@ description: Build, sign, and inspect Tizen TPK packages for Flutter apps with `
 metadata:
   target: flutter-tizen
   category: build
-  last_modified: Wed, 27 May 2026 08:02:04 GMT
+  last_modified: Mon, 19 Oct 2026 00:00:00 GMT
 ---
 # Building Tizen TPKs from Flutter apps
 
@@ -16,11 +16,13 @@ metadata:
 build/tizen/tpk/<packageId>-<version>.tpk
 ```
 
+Use this Flutter-Tizen build pipeline even when a general Tizen SDK build skill is installed. A generic native build/package operation can reuse old Flutter assets without compiling changed Dart sources; its successful exit does not verify a current Flutter app build.
+
 Three knobs control the output:
 
-- `--device-profile {common|tv}` — selects which Tizen profile the package targets. **Default is `tv`** (verified via `flutter-tizen build tpk --help`), so always pass `--device-profile` explicitly rather than relying on the default. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** The official `flutter-tizen` `doc/commands.md` documents only `common` and `tv`; phone targets land under `common`. Legacy `mobile` / `wearable` profiles are gone — use flutter-tizen 3.16.2 or older for Galaxy Watch.
+- `--device-profile {common|tv}` — selects which Tizen profile the package targets. **Default is `tv`** (verified via `flutter-tizen build tpk --help`), so always pass `--device-profile` explicitly rather than relying on the default. **The TV profile must be matched explicitly; `common` packages will not install on Samsung TV.** The official `flutter-tizen` `doc/commands.md` documents only `common` and `tv`; phone targets land under `common`. The flag still accepts `mobile`; `wearable` needs flutter-tizen 3.16.2 or older (Galaxy Watch).
 - `--target-arch {arm|arm64|x86|x64}` — must match the device CPU. Default is `arm`. Current emulators are 64-bit `x64`: the Tizen 10.0 TV emulator (verified `cpu_arch:x86_64` on `T-samsung-10.0-x86_64`) and the common 10.x emulator are both `x64`; only older TV images (9.0 and earlier) are 32-bit `x86`. Verify with `sdb -s <id> capability | grep cpu_arch` — **not** `sdb shell uname -m`, which the secured TV emulator blocks (`intershell_support:disabled`, returns nothing). `x64` requires `api-version="8.0"` or newer in `tizen/tizen-manifest.xml`; the default generated `6.0` manifest fails. Real TVs and RPi are `arm` or `arm64`.
-- `--debug` / `--profile` / `--release` — Flutter build mode. Defaults to `--release`. Emulators require a JIT-capable build, i.e. `--debug`.
+- `--debug` / `--profile` / `--release` — Flutter build mode. Defaults to `--release`. `x86` emulator images ship a debug engine only; `x64`, `arm`, and `arm64` support all three modes.
 
 The package is signed using the active `tizen security-profile`. See [flutter-tizen-setup](../flutter-tizen-setup/SKILL.md) before running this skill.
 
@@ -31,10 +33,10 @@ Match the profile and arch to the target. Mismatches produce installer errors th
 | Target | `--device-profile` | `--target-arch` | Notes |
 |---|---|---|---|
 | Samsung TV 2021+ (real) | `tv` | `arm` (32-bit) | Tizen TV signing keys also required for store submission |
-| Tizen TV emulator (TV 10.0 image) | `tv` | `x64` | 64-bit (verified `cpu_arch:x86_64`); must build `--debug` (JIT only) |
-| Tizen TV emulator (TV 9.0 and older) | `tv` | `x86` | 32-bit, must build `--debug` (JIT only) |
+| Tizen TV emulator (TV 10.0 image) | `tv` | `x64` | 64-bit (verified `cpu_arch:x86_64`); all build modes |
+| Tizen TV emulator (TV 9.0 and older) | `tv` | `x86` | 32-bit, `--debug` only (no x86 profile/release engine) |
 | Raspberry Pi 4 (Tizen OS) | `common` | `arm` or `arm64` | Match the installed Tizen image word size |
-| Tizen common emulator (Tizen 10.x) | `common` | `x64` | 64-bit; older images use `x86`. Must build `--debug`; set manifest `api-version` to `8.0`+ |
+| Tizen common emulator (Tizen 10.x) | `common` | `x64` | 64-bit; older images use `x86`. All build modes (release and profile verified on Tizen 10.1); set manifest `api-version` to `8.0`+ |
 
 Find the target's arch with `sdb capability` — it works on every target, including TV (where `sdb shell` is blocked, so `sdb shell uname -m` returns nothing):
 
@@ -44,8 +46,8 @@ sdb -s <device-id> capability | grep -E 'cpu_arch|profile_name'
 
 ## Build modes
 
-- `--debug` — JIT-based AOT-disabled build. Required for any Tizen emulator. Enables `hot reload` when launched via `flutter-tizen run`.
-- `--profile` — AOT, instrumentation enabled. Use to measure performance on real hardware. Not runnable on emulators.
+- `--debug` — JIT-based AOT-disabled build. The only mode for `x86` emulator images. Enables `hot reload` when launched via `flutter-tizen run`.
+- `--profile` — AOT, instrumentation enabled. Use to measure performance on real hardware or an `x64` emulator.
 - `--release` — AOT, instrumentation stripped. Default. Use for store submission.
 
 Pair `--release` with `--obfuscate --split-debug-info=<dir>` for production. The split-debug directory is what you keep to symbolize crashes later via `flutter-tizen symbolize`.
@@ -66,9 +68,9 @@ TPKs must be signed at build time; there is no "sign later" step in the flutter-
 Copy this checklist:
 
 ### Task Progress
-- [ ] **Step 1: Confirm toolchain.** `flutter-tizen doctor -v` clean; `tizen security-profiles list` shows a profile.
+- [ ] **Step 1: Confirm toolchain.** Run `flutter-tizen doctor -v` and `tizen security-profiles list` separately. Require a healthy Tizen toolchain and a valid selected signing profile; report unrelated platform issues separately.
 - [ ] **Step 2: Identify the target.** Capture `device-profile` and `target-arch` from `sdb -s <id> capability`.
-- [ ] **Step 3: Pick build mode.** `--debug` for emulators; `--release` for store / hardware; `--profile` for benchmarks.
+- [ ] **Step 3: Pick build mode.** `--debug` for hot reload and for `x86` emulators; `--release` for store / hardware; `--profile` for benchmarks.
 - [ ] **Step 4: Run the build.**
    ```sh
    flutter-tizen build tpk \
@@ -108,7 +110,7 @@ unzip -p build/tizen/tpk/*.tpk tizen-manifest.xml | grep -oE 'appid="[^"]+"'
 | `signature is invalid` at install time | Signing profile distributor cert does not include device DUID | Re-issue distributor cert with the device DUID; rebuild |
 | `Tizen package is not authorized` | DUID mismatch or `--security-profile` not set | Rebuild with the correct `--security-profile` |
 | Build OK, install reports `cannot find symbol` for libflutter | `--target-arch` mismatch | Rebuild with the device's actual arch (`sdb -s <id> capability \| grep cpu_arch`) |
-| Emulator launches the TPK but app crashes immediately | Built `--release` for an emulator | Rebuild with `--debug` |
+| `x86` emulator launches the TPK but app crashes immediately | Built `--release` / `--profile` for an `x86` image, which has no AOT engine | Rebuild with `--debug` |
 | `Failed to find security-profile` | No active profile | Run setup skill; `tizen security-profiles set-active <name>` |
 | App installs but appid disappears | `tizen-manifest.xml` declares an api-version newer than the device firmware | Lower `api-version` in `tizen/tizen-manifest.xml` to one supported by the device |
 

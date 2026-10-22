@@ -25,8 +25,8 @@ Provides Tizen-specific skills. Use with [flutter/agent-plugins](https://github.
 
 ## Rules
 
-Skills are opt-in — an agent loads one only when the task matches its description. The
-`flutter` → `flutter-tizen` substitution has to hold for *every* task in a Tizen project, including
+Skills are opt-in — an agent loads one only when the task matches its description. Routing
+Tizen-facing commands through `flutter-tizen` has to hold for *every* task in a Tizen project, including
 tasks handled by a general Flutter skill from [flutter/agent-plugins](https://github.com/flutter/agent-plugins),
 so it ships as an always-on rule instead:
 
@@ -58,6 +58,12 @@ npx skills update
 For manual install, copy or symlink `skills/flutter-tizen-*/` folders to your target directory.
 
 ## Maintainers
+
+Check the example scripts' preflight behavior and the portable/Cursor rule consistency without an SDK or device:
+
+```bash
+python3 tests/example-workflows-test.py
+```
 
 ```bash
 # Lint
